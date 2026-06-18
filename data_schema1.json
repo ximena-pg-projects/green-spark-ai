@@ -1,0 +1,640 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/school-sustainability-schema",
+  "title": "School Sustainability Assessment",
+  "description": "Comprehensive data schema for school sustainability assessments with Basic and Advanced tiers",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metadata",
+    "school_profile",
+    "energy",
+    "water",
+    "waste",
+    "transportation",
+    "food"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "title": "Assessment Metadata",
+      "description": "Versioning and reporting-period information for this submission",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "assessment_date",
+        "reporting_period_start",
+        "reporting_period_end"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.1.0",
+          "description": "Version of this schema that the submitted data conforms to"
+        },
+        "assessment_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the assessment was completed or submitted (YYYY-MM-DD)"
+        },
+        "reporting_period_start": {
+          "type": "string",
+          "format": "date",
+          "description": "Start date of the period covered by the consumption and usage data below (YYYY-MM-DD)"
+        },
+        "reporting_period_end": {
+          "type": "string",
+          "format": "date",
+          "description": "End date of the period covered by the consumption and usage data below (YYYY-MM-DD)"
+        }
+      }
+    },
+    "school_profile": {
+      "type": "object",
+      "title": "School Profile",
+      "description": "Basic information about the school institution",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "location",
+        "type",
+        "facility_size_sqft",
+        "population"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Official name of the school"
+        },
+        "location": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "city",
+            "state",
+            "country"
+          ],
+          "properties": {
+            "city": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "City where the school is located"
+            },
+            "state": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "State or province where the school is located"
+            },
+            "country": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Country where the school is located"
+            }
+          }
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "Pre-K",
+            "Elementary",
+            "Middle",
+            "High",
+            "K-8",
+            "K-12",
+            "University",
+            "Vocational/Technical",
+            "Other"
+          ],
+          "description": "Type of educational institution"
+        },
+        "facility_size_sqft": {
+          "$ref": "#/$defs/nonNegativeNumber",
+          "minimum": 100,
+          "maximum": 10000000,
+          "unit": "sqft",
+          "description": "Total facility size in square feet"
+        },
+        "population": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "students",
+            "staff"
+          ],
+          "properties": {
+            "students": {
+              "$ref": "#/$defs/nonNegativeInteger",
+              "maximum": 100000,
+              "description": "Number of enrolled students"
+            },
+            "staff": {
+              "$ref": "#/$defs/nonNegativeInteger",
+              "maximum": 50000,
+              "description": "Number of staff members (teachers, administrators, support staff)"
+            }
+          }
+        }
+      }
+    },
+    "energy": {
+      "type": "object",
+      "title": "Energy Assessment",
+      "description": "Energy consumption and efficiency metrics",
+      "additionalProperties": false,
+      "required": [
+        "tier"
+      ],
+      "allOf": [
+        {
+          "$ref": "#/$defs/tierRequirement"
+        }
+      ],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": [
+            "Basic",
+            "Advanced"
+          ],
+          "description": "Data collection tier level"
+        },
+        "basic": {
+          "type": "object",
+          "description": "Basic energy data (required when tier is 'Basic')",
+          "additionalProperties": false,
+          "required": [
+            "monthly_electricity_bill_usd",
+            "primary_heating_source"
+          ],
+          "properties": {
+            "monthly_electricity_bill_usd": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 1000000,
+              "unit": "USD",
+              "description": "Average monthly electricity bill in USD"
+            },
+            "primary_heating_source": {
+              "type": "string",
+              "enum": [
+                "Natural Gas",
+                "Electric",
+                "Oil",
+                "Propane",
+                "Geothermal",
+                "District Steam",
+                "Other"
+              ],
+              "description": "Primary source for heating the facility"
+            }
+          }
+        },
+        "advanced": {
+          "type": "object",
+          "description": "Advanced energy data (required when tier is 'Advanced')",
+          "additionalProperties": false,
+          "required": [
+            "annual_electricity_kwh",
+            "annual_heating_fuel",
+            "renewable_kwh_produced",
+            "led_lighting_percentage"
+          ],
+          "properties": {
+            "annual_electricity_kwh": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 100000000,
+              "unit": "kWh",
+              "description": "Annual electricity consumption in kilowatt-hours"
+            },
+            "annual_heating_fuel": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "amount",
+                "unit"
+              ],
+              "properties": {
+                "amount": {
+                  "$ref": "#/$defs/nonNegativeNumber",
+                  "maximum": 10000000,
+                  "description": "Annual heating fuel consumption amount"
+                },
+                "unit": {
+                  "type": "string",
+                  "enum": [
+                    "Therms",
+                    "Gallons",
+                    "Cubic Feet"
+                  ],
+                  "description": "Unit of measurement for heating fuel"
+                }
+              }
+            },
+            "renewable_kwh_produced": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 100000000,
+              "unit": "kWh",
+              "description": "Annual renewable energy generated on-site in kilowatt-hours"
+            },
+            "led_lighting_percentage": {
+              "$ref": "#/$defs/percent",
+              "description": "Percentage of facility lighting that is LED"
+            }
+          }
+        }
+      }
+    },
+    "water": {
+      "type": "object",
+      "title": "Water Assessment",
+      "description": "Water consumption and conservation metrics",
+      "additionalProperties": false,
+      "required": [
+        "tier"
+      ],
+      "allOf": [
+        {
+          "$ref": "#/$defs/tierRequirement"
+        }
+      ],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": [
+            "Basic",
+            "Advanced"
+          ],
+          "description": "Data collection tier level"
+        },
+        "basic": {
+          "type": "object",
+          "description": "Basic water data (required when tier is 'Basic')",
+          "additionalProperties": false,
+          "required": [
+            "monthly_water_bill_usd",
+            "has_irrigated_lawn"
+          ],
+          "properties": {
+            "monthly_water_bill_usd": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 1000000,
+              "unit": "USD",
+              "description": "Average monthly water bill in USD"
+            },
+            "has_irrigated_lawn": {
+              "type": "boolean",
+              "description": "Whether the school has irrigated lawn or landscaping"
+            }
+          }
+        },
+        "advanced": {
+          "type": "object",
+          "description": "Advanced water data (required when tier is 'Advanced')",
+          "additionalProperties": false,
+          "required": [
+            "annual_water_gallons",
+            "low_flow_fixture_percentage",
+            "rainwater_harvesting_gallons"
+          ],
+          "properties": {
+            "annual_water_gallons": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 1000000000,
+              "unit": "gallons",
+              "description": "Annual water consumption in gallons"
+            },
+            "low_flow_fixture_percentage": {
+              "$ref": "#/$defs/percent",
+              "description": "Percentage of fixtures that are low-flow"
+            },
+            "rainwater_harvesting_gallons": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 10000000,
+              "unit": "gallons",
+              "description": "Annual rainwater harvested in gallons"
+            }
+          }
+        }
+      }
+    },
+    "waste": {
+      "type": "object",
+      "title": "Waste Assessment",
+      "description": "Waste generation and diversion metrics",
+      "additionalProperties": false,
+      "required": [
+        "tier"
+      ],
+      "allOf": [
+        {
+          "$ref": "#/$defs/tierRequirement"
+        }
+      ],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": [
+            "Basic",
+            "Advanced"
+          ],
+          "description": "Data collection tier level"
+        },
+        "basic": {
+          "type": "object",
+          "description": "Basic waste data (required when tier is 'Basic')",
+          "additionalProperties": false,
+          "required": [
+            "trash_pickup_frequency_per_week",
+            "bin_size_cubic_yards",
+            "has_recycling"
+          ],
+          "properties": {
+            "trash_pickup_frequency_per_week": {
+              "$ref": "#/$defs/nonNegativeInteger",
+              "maximum": 50,
+              "description": "Number of trash pickups per week"
+            },
+            "bin_size_cubic_yards": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 50,
+              "unit": "cubic yards",
+              "description": "Size of trash bins in cubic yards"
+            },
+            "has_recycling": {
+              "type": "string",
+              "enum": [
+                "No",
+                "Partial",
+                "Yes"
+              ],
+              "description": "Level of recycling program implementation"
+            }
+          }
+        },
+        "advanced": {
+          "type": "object",
+          "description": "Advanced waste data (required when tier is 'Advanced')",
+          "additionalProperties": false,
+          "required": [
+            "annual_landfill_tons",
+            "annual_recycled_tons",
+            "annual_composted_tons",
+            "annual_paper_reams"
+          ],
+          "properties": {
+            "annual_landfill_tons": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 10000,
+              "unit": "tons",
+              "description": "Annual waste sent to landfill in tons"
+            },
+            "annual_recycled_tons": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 10000,
+              "unit": "tons",
+              "description": "Annual waste recycled in tons"
+            },
+            "annual_composted_tons": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 10000,
+              "unit": "tons",
+              "description": "Annual waste composted in tons"
+            },
+            "annual_paper_reams": {
+              "$ref": "#/$defs/nonNegativeInteger",
+              "maximum": 1000000,
+              "unit": "reams",
+              "description": "Annual paper consumption in reams"
+            }
+          }
+        }
+      }
+    },
+    "transportation": {
+      "type": "object",
+      "title": "Transportation Assessment",
+      "description": "Transportation and commuting metrics",
+      "additionalProperties": false,
+      "required": [
+        "tier"
+      ],
+      "allOf": [
+        {
+          "$ref": "#/$defs/tierRequirement"
+        }
+      ],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": [
+            "Basic",
+            "Advanced"
+          ],
+          "description": "Data collection tier level"
+        },
+        "basic": {
+          "type": "object",
+          "description": "Basic transportation data (required when tier is 'Basic')",
+          "additionalProperties": false,
+          "required": [
+            "bus_count",
+            "commute_mix"
+          ],
+          "properties": {
+            "bus_count": {
+              "$ref": "#/$defs/nonNegativeInteger",
+              "maximum": 500,
+              "description": "Number of school buses in fleet"
+            },
+            "commute_mix": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "walk_bike_percent",
+                "bus_percent",
+                "car_percent"
+              ],
+              "$comment": "walk_bike_percent + bus_percent + car_percent should sum to approximately 100. JSON Schema cannot enforce cross-field sums natively, so validate this invariant at the application layer.",
+              "properties": {
+                "walk_bike_percent": {
+                  "$ref": "#/$defs/percent",
+                  "description": "Percentage of students walking or biking to school"
+                },
+                "bus_percent": {
+                  "$ref": "#/$defs/percent",
+                  "description": "Percentage of students taking the bus"
+                },
+                "car_percent": {
+                  "$ref": "#/$defs/percent",
+                  "description": "Percentage of students arriving by car"
+                }
+              }
+            }
+          }
+        },
+        "advanced": {
+          "type": "object",
+          "description": "Advanced transportation data (required when tier is 'Advanced')",
+          "additionalProperties": false,
+          "required": [
+            "bus_fuel_type",
+            "avg_student_miles_per_day",
+            "has_idle_policy"
+          ],
+          "properties": {
+            "bus_fuel_type": {
+              "type": "string",
+              "enum": [
+                "Diesel",
+                "Electric",
+                "CNG",
+                "Propane",
+                "Hybrid",
+                "Biodiesel",
+                "Other"
+              ],
+              "description": "Primary fuel type for school buses"
+            },
+            "avg_student_miles_per_day": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 200,
+              "unit": "miles",
+              "description": "Average round-trip commute miles per student per day"
+            },
+            "has_idle_policy": {
+              "type": "boolean",
+              "description": "Whether the school has an anti-idling policy for vehicles"
+            }
+          }
+        }
+      }
+    },
+    "food": {
+      "type": "object",
+      "title": "Food Services Assessment",
+      "description": "Food service and dining metrics",
+      "additionalProperties": false,
+      "required": [
+        "tier"
+      ],
+      "allOf": [
+        {
+          "$ref": "#/$defs/tierRequirement"
+        }
+      ],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": [
+            "Basic",
+            "Advanced"
+          ],
+          "description": "Data collection tier level"
+        },
+        "basic": {
+          "type": "object",
+          "description": "Basic food data (required when tier is 'Basic')",
+          "additionalProperties": false,
+          "required": [
+            "provides_lunch",
+            "has_meatless_options"
+          ],
+          "properties": {
+            "provides_lunch": {
+              "type": "boolean",
+              "description": "Whether the school provides lunch services"
+            },
+            "has_meatless_options": {
+              "type": "boolean",
+              "description": "Whether meatless meal options are available"
+            }
+          }
+        },
+        "advanced": {
+          "type": "object",
+          "description": "Advanced food data (required when tier is 'Advanced')",
+          "additionalProperties": false,
+          "required": [
+            "daily_plate_waste_lbs",
+            "local_sourcing_percentage",
+            "single_use_plastic_level"
+          ],
+          "properties": {
+            "daily_plate_waste_lbs": {
+              "$ref": "#/$defs/nonNegativeNumber",
+              "maximum": 10000,
+              "unit": "lbs",
+              "description": "Daily food waste from plates in pounds"
+            },
+            "local_sourcing_percentage": {
+              "$ref": "#/$defs/percent",
+              "description": "Percentage of food sourced from local providers"
+            },
+            "single_use_plastic_level": {
+              "type": "string",
+              "enum": [
+                "None",
+                "Low",
+                "Medium",
+                "High"
+              ],
+              "description": "Level of single-use plastic usage in food services"
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "unit": "%"
+    },
+    "nonNegativeNumber": {
+      "type": "number",
+      "minimum": 0
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "tierRequirement": {
+      "if": {
+        "properties": {
+          "tier": {
+            "const": "Basic"
+          }
+        },
+        "required": [
+          "tier"
+        ]
+      },
+      "then": {
+        "required": [
+          "basic"
+        ],
+        "not": {
+          "required": [
+            "advanced"
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "advanced"
+        ],
+        "not": {
+          "required": [
+            "basic"
+          ]
+        }
+      }
+    }
+  }
+}
