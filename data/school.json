@@ -1,0 +1,53 @@
+{
+  "profile": {
+    "name": "Sample High School",
+    "city": "Anytown",
+    "state": "ST",
+    "country": "USA",
+    "schoolType": "Secondary",
+    "squareFootage": 142000,
+    "students": 1210,
+    "staff": 95
+  },
+  "energy": {
+    "monthlyElectricBill": 13100,
+    "primaryHeatingSource": "natural_gas",
+    "annualElectricityKwh": 1750000,
+    "annualHeatingFuel": 38000,
+    "heatingFuelUnit": "therms",
+    "hasSolar": false,
+    "ledPercent": 45
+  },
+  "water": {
+    "monthlyWaterBill": 2800,
+    "hasIrrigatedField": true,
+    "annualGallons": 4200000,
+    "lowFlowPercent": 30,
+    "rainwaterHarvesting": false
+  },
+  "waste": {
+    "collectionsPerWeek": 5,
+    "dumpsterSizeYards": 8,
+    "recycling": "partial",
+    "annualLandfillTons": 95,
+    "annualRecycledTons": 18,
+    "annualCompostTons": 0,
+    "reamsPaperPerYear": 4000
+  },
+  "transportation": {
+    "busCount": 14,
+    "busFuelType": "diesel",
+    "pctWalkBike": 8,
+    "pctBus": 55,
+    "pctCar": 37,
+    "avgTripMilesPerStudent": 6.5,
+    "busesIdle": true
+  },
+  "food": {
+    "providesLunch": true,
+    "hasMeatFreeOptions": false,
+    "plateWasteLbsPerDay": 210,
+    "pctLocalSourcing": 12,
+    "singleUsePlastics": "high"
+  }
+}
