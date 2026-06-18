@@ -1,0 +1,362 @@
+[
+  {
+    "id": "peer-01",
+    "students": 600,
+    "energyKwhPerSqft": 5.3,
+    "waterGalPerStudent": 1250,
+    "wasteLbPerStudentDay": 0.3,
+    "transportKgPerStudent": 175,
+    "foodWasteLbPerStudentDay": 0.06
+  },
+  {
+    "id": "peer-02",
+    "students": 647,
+    "energyKwhPerSqft": 7.1,
+    "waterGalPerStudent": 1955,
+    "wasteLbPerStudentDay": 0.5,
+    "transportKgPerStudent": 328,
+    "foodWasteLbPerStudentDay": 0.12
+  },
+  {
+    "id": "peer-03",
+    "students": 694,
+    "energyKwhPerSqft": 9,
+    "waterGalPerStudent": 2660,
+    "wasteLbPerStudentDay": 0.7,
+    "transportKgPerStudent": 480,
+    "foodWasteLbPerStudentDay": 0.18
+  },
+  {
+    "id": "peer-04",
+    "students": 741,
+    "energyKwhPerSqft": 10.9,
+    "waterGalPerStudent": 3365,
+    "wasteLbPerStudentDay": 0.9,
+    "transportKgPerStudent": 274,
+    "foodWasteLbPerStudentDay": 0.11
+  },
+  {
+    "id": "peer-05",
+    "students": 788,
+    "energyKwhPerSqft": 12.8,
+    "waterGalPerStudent": 1506,
+    "wasteLbPerStudentDay": 0.48,
+    "transportKgPerStudent": 426,
+    "foodWasteLbPerStudentDay": 0.17
+  },
+  {
+    "id": "peer-06",
+    "students": 835,
+    "energyKwhPerSqft": 14.7,
+    "waterGalPerStudent": 2212,
+    "wasteLbPerStudentDay": 0.68,
+    "transportKgPerStudent": 220,
+    "foodWasteLbPerStudentDay": 0.11
+  },
+  {
+    "id": "peer-07",
+    "students": 882,
+    "energyKwhPerSqft": 5.8,
+    "waterGalPerStudent": 2917,
+    "wasteLbPerStudentDay": 0.88,
+    "transportKgPerStudent": 372,
+    "foodWasteLbPerStudentDay": 0.16
+  },
+  {
+    "id": "peer-08",
+    "students": 929,
+    "energyKwhPerSqft": 7.7,
+    "waterGalPerStudent": 3622,
+    "wasteLbPerStudentDay": 0.47,
+    "transportKgPerStudent": 525,
+    "foodWasteLbPerStudentDay": 0.1
+  },
+  {
+    "id": "peer-09",
+    "students": 976,
+    "energyKwhPerSqft": 9.6,
+    "waterGalPerStudent": 1763,
+    "wasteLbPerStudentDay": 0.67,
+    "transportKgPerStudent": 319,
+    "foodWasteLbPerStudentDay": 0.16
+  },
+  {
+    "id": "peer-10",
+    "students": 1023,
+    "energyKwhPerSqft": 11.4,
+    "waterGalPerStudent": 2468,
+    "wasteLbPerStudentDay": 0.87,
+    "transportKgPerStudent": 471,
+    "foodWasteLbPerStudentDay": 0.09
+  },
+  {
+    "id": "peer-11",
+    "students": 1070,
+    "energyKwhPerSqft": 13.3,
+    "waterGalPerStudent": 3173,
+    "wasteLbPerStudentDay": 0.45,
+    "transportKgPerStudent": 265,
+    "foodWasteLbPerStudentDay": 0.15
+  },
+  {
+    "id": "peer-12",
+    "students": 1117,
+    "energyKwhPerSqft": 15.2,
+    "waterGalPerStudent": 1314,
+    "wasteLbPerStudentDay": 0.65,
+    "transportKgPerStudent": 417,
+    "foodWasteLbPerStudentDay": 0.09
+  },
+  {
+    "id": "peer-13",
+    "students": 1164,
+    "energyKwhPerSqft": 6.3,
+    "waterGalPerStudent": 2019,
+    "wasteLbPerStudentDay": 0.85,
+    "transportKgPerStudent": 211,
+    "foodWasteLbPerStudentDay": 0.15
+  },
+  {
+    "id": "peer-14",
+    "students": 1211,
+    "energyKwhPerSqft": 8.2,
+    "waterGalPerStudent": 2724,
+    "wasteLbPerStudentDay": 0.44,
+    "transportKgPerStudent": 363,
+    "foodWasteLbPerStudentDay": 0.08
+  },
+  {
+    "id": "peer-15",
+    "students": 1258,
+    "energyKwhPerSqft": 10.1,
+    "waterGalPerStudent": 3429,
+    "wasteLbPerStudentDay": 0.64,
+    "transportKgPerStudent": 516,
+    "foodWasteLbPerStudentDay": 0.14
+  },
+  {
+    "id": "peer-16",
+    "students": 1305,
+    "energyKwhPerSqft": 12,
+    "waterGalPerStudent": 1571,
+    "wasteLbPerStudentDay": 0.84,
+    "transportKgPerStudent": 310,
+    "foodWasteLbPerStudentDay": 0.08
+  },
+  {
+    "id": "peer-17",
+    "students": 1352,
+    "energyKwhPerSqft": 13.9,
+    "waterGalPerStudent": 2276,
+    "wasteLbPerStudentDay": 0.42,
+    "transportKgPerStudent": 462,
+    "foodWasteLbPerStudentDay": 0.13
+  },
+  {
+    "id": "peer-18",
+    "students": 1399,
+    "energyKwhPerSqft": 15.8,
+    "waterGalPerStudent": 2981,
+    "wasteLbPerStudentDay": 0.62,
+    "transportKgPerStudent": 256,
+    "foodWasteLbPerStudentDay": 0.07
+  },
+  {
+    "id": "peer-19",
+    "students": 1446,
+    "energyKwhPerSqft": 6.9,
+    "waterGalPerStudent": 3686,
+    "wasteLbPerStudentDay": 0.82,
+    "transportKgPerStudent": 408,
+    "foodWasteLbPerStudentDay": 0.13
+  },
+  {
+    "id": "peer-20",
+    "students": 1493,
+    "energyKwhPerSqft": 8.8,
+    "waterGalPerStudent": 1827,
+    "wasteLbPerStudentDay": 0.41,
+    "transportKgPerStudent": 202,
+    "foodWasteLbPerStudentDay": 0.06
+  },
+  {
+    "id": "peer-21",
+    "students": 1540,
+    "energyKwhPerSqft": 10.6,
+    "waterGalPerStudent": 2532,
+    "wasteLbPerStudentDay": 0.61,
+    "transportKgPerStudent": 354,
+    "foodWasteLbPerStudentDay": 0.12
+  },
+  {
+    "id": "peer-22",
+    "students": 1587,
+    "energyKwhPerSqft": 12.5,
+    "waterGalPerStudent": 3237,
+    "wasteLbPerStudentDay": 0.81,
+    "transportKgPerStudent": 507,
+    "foodWasteLbPerStudentDay": 0.18
+  },
+  {
+    "id": "peer-23",
+    "students": 1634,
+    "energyKwhPerSqft": 14.4,
+    "waterGalPerStudent": 1378,
+    "wasteLbPerStudentDay": 0.39,
+    "transportKgPerStudent": 301,
+    "foodWasteLbPerStudentDay": 0.12
+  },
+  {
+    "id": "peer-24",
+    "students": 1681,
+    "energyKwhPerSqft": 5.5,
+    "waterGalPerStudent": 2083,
+    "wasteLbPerStudentDay": 0.59,
+    "transportKgPerStudent": 453,
+    "foodWasteLbPerStudentDay": 0.17
+  },
+  {
+    "id": "peer-25",
+    "students": 1728,
+    "energyKwhPerSqft": 7.4,
+    "waterGalPerStudent": 2788,
+    "wasteLbPerStudentDay": 0.79,
+    "transportKgPerStudent": 247,
+    "foodWasteLbPerStudentDay": 0.11
+  },
+  {
+    "id": "peer-26",
+    "students": 1775,
+    "energyKwhPerSqft": 9.3,
+    "waterGalPerStudent": 3494,
+    "wasteLbPerStudentDay": 0.38,
+    "transportKgPerStudent": 399,
+    "foodWasteLbPerStudentDay": 0.17
+  },
+  {
+    "id": "peer-27",
+    "students": 1822,
+    "energyKwhPerSqft": 11.2,
+    "waterGalPerStudent": 1635,
+    "wasteLbPerStudentDay": 0.58,
+    "transportKgPerStudent": 193,
+    "foodWasteLbPerStudentDay": 0.1
+  },
+  {
+    "id": "peer-28",
+    "students": 1869,
+    "energyKwhPerSqft": 13.1,
+    "waterGalPerStudent": 2340,
+    "wasteLbPerStudentDay": 0.78,
+    "transportKgPerStudent": 346,
+    "foodWasteLbPerStudentDay": 0.16
+  },
+  {
+    "id": "peer-29",
+    "students": 1916,
+    "energyKwhPerSqft": 14.9,
+    "waterGalPerStudent": 3045,
+    "wasteLbPerStudentDay": 0.36,
+    "transportKgPerStudent": 498,
+    "foodWasteLbPerStudentDay": 0.1
+  },
+  {
+    "id": "peer-30",
+    "students": 1963,
+    "energyKwhPerSqft": 6.1,
+    "waterGalPerStudent": 3750,
+    "wasteLbPerStudentDay": 0.56,
+    "transportKgPerStudent": 292,
+    "foodWasteLbPerStudentDay": 0.16
+  },
+  {
+    "id": "peer-31",
+    "students": 2010,
+    "energyKwhPerSqft": 7.9,
+    "waterGalPerStudent": 1891,
+    "wasteLbPerStudentDay": 0.76,
+    "transportKgPerStudent": 444,
+    "foodWasteLbPerStudentDay": 0.09
+  },
+  {
+    "id": "peer-32",
+    "students": 2057,
+    "energyKwhPerSqft": 9.8,
+    "waterGalPerStudent": 2596,
+    "wasteLbPerStudentDay": 0.35,
+    "transportKgPerStudent": 238,
+    "foodWasteLbPerStudentDay": 0.15
+  },
+  {
+    "id": "peer-33",
+    "students": 2104,
+    "energyKwhPerSqft": 11.7,
+    "waterGalPerStudent": 3301,
+    "wasteLbPerStudentDay": 0.55,
+    "transportKgPerStudent": 390,
+    "foodWasteLbPerStudentDay": 0.08
+  },
+  {
+    "id": "peer-34",
+    "students": 2151,
+    "energyKwhPerSqft": 13.6,
+    "waterGalPerStudent": 1442,
+    "wasteLbPerStudentDay": 0.75,
+    "transportKgPerStudent": 184,
+    "foodWasteLbPerStudentDay": 0.14
+  },
+  {
+    "id": "peer-35",
+    "students": 2198,
+    "energyKwhPerSqft": 15.5,
+    "waterGalPerStudent": 2147,
+    "wasteLbPerStudentDay": 0.33,
+    "transportKgPerStudent": 337,
+    "foodWasteLbPerStudentDay": 0.08
+  },
+  {
+    "id": "peer-36",
+    "students": 2245,
+    "energyKwhPerSqft": 6.6,
+    "waterGalPerStudent": 2853,
+    "wasteLbPerStudentDay": 0.53,
+    "transportKgPerStudent": 489,
+    "foodWasteLbPerStudentDay": 0.14
+  },
+  {
+    "id": "peer-37",
+    "students": 2292,
+    "energyKwhPerSqft": 8.5,
+    "waterGalPerStudent": 3558,
+    "wasteLbPerStudentDay": 0.73,
+    "transportKgPerStudent": 283,
+    "foodWasteLbPerStudentDay": 0.07
+  },
+  {
+    "id": "peer-38",
+    "students": 2339,
+    "energyKwhPerSqft": 10.4,
+    "waterGalPerStudent": 1699,
+    "wasteLbPerStudentDay": 0.32,
+    "transportKgPerStudent": 435,
+    "foodWasteLbPerStudentDay": 0.13
+  },
+  {
+    "id": "peer-39",
+    "students": 2386,
+    "energyKwhPerSqft": 12.2,
+    "waterGalPerStudent": 2404,
+    "wasteLbPerStudentDay": 0.52,
+    "transportKgPerStudent": 229,
+    "foodWasteLbPerStudentDay": 0.07
+  },
+  {
+    "id": "peer-40",
+    "students": 633,
+    "energyKwhPerSqft": 14.1,
+    "waterGalPerStudent": 3109,
+    "wasteLbPerStudentDay": 0.72,
+    "transportKgPerStudent": 381,
+    "foodWasteLbPerStudentDay": 0.12
+  }
+]
