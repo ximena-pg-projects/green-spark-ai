@@ -202,14 +202,17 @@ export async function runDetective(
   }
  
   const toolCall = response.choices[0]?.message?.tool_calls?.find(
-    (t) => t.function.name === "submit_analysis",
+    (
+      t,
+    ): t is OpenAI.Chat.Completions.ChatCompletionMessageToolCall =>
+      t.type === "function" && t.function.name === "submit_analysis",
   );
-  if (!toolCall) {
+  if (!toolCall || toolCall.type !== "function") {
     throw new Error(
       "The detective did not return a structured analysis (no submit_analysis tool call in response).",
     );
   }
- 
+
   let parsedArgs: unknown;
   try {
     parsedArgs = JSON.parse(toolCall.function.arguments);
@@ -219,6 +222,6 @@ export async function runDetective(
         toolCall.function.arguments.slice(0, 500),
     );
   }
- 
+
   return DetectiveOutputSchema.parse(parsedArgs) as DetectiveOutput;
 }
