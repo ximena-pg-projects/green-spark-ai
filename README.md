@@ -36,17 +36,19 @@ Built and verified (compiles, lints, smoke-tested):
 - [x] Layer 2 benchmarks, peer percentiles, confidence gate (`lib/benchmarks.ts`, `data/peers.json`)
 - [x] Intervention ROI library (`lib/interventions.ts`)
 - [x] AI detective and serverless route (`lib/detective.ts`, `lib/detectivePrompt.ts`, `app/api/analyze/route.ts`)
-- [x] Landing page and case-file data preview (`app/page.tsx`, `app/analyze/page.tsx`)
-- [x] What-if simulator backend (`lib/simulate.ts`, `app/api/simulate/route.ts`) — stacks interventions from the ROI library, applies them as cost/CO2 reductions on top of the Layer 1 footprint, and returns baseline vs. projected vs. delta with no LLM call needed
+- [x] Named flagship school + hero user (`data/school.json`, `lib/flagship.ts`)
+- [x] Results dashboard wired to `/api/analyze`, with a deterministic offline fallback so a live demo never blanks out (`app/analyze/page.tsx`, `lib/localDetective.ts`)
+- [x] Confidence meter, ranked impact cards, peer gauge, student-pitch toggle (`components/`)
+- [x] What-if simulator + 12-month projection, recomputing client-side (`lib/simulate.ts`, `components/WhatIfSimulator.tsx`, `components/ProjectionChart.tsx`, `app/api/simulate/route.ts`)
+- [x] Benchmark autofill + Low-confidence path (`lib/estimate.ts`) and a working profile intake on the landing page
+- [x] Local + federal rebates matched to each fix (`data/rebates.json`, `lib/rebates.ts`, `components/RebateBadge.tsx`)
+
 Next up:
 
-- [ ] Front-end results dashboard (charts, impact cards, confidence badge) wired to `/api/analyze`
-- [ ] Input form with benchmark autofill
-- [ ] What-if simulator UI (sliders/checkboxes wired to `/api/simulate`)
-- [ ] 12-month projection view on top of the simulator
-- [ ] Local rebates tied to each recommendation
-- [ ] Swap the placeholder school for a real US school
-- [ ] Deploy to Vercel
+- [ ] Add `ANTHROPIC_API_KEY` to `.env.local` so the dashboard shows live Claude analysis (without it, the offline fallback runs)
+- [ ] Swap the placeholder Austin school for the teammate's real US school (edit `data/school.json` + `lib/flagship.ts`)
+- [ ] Deploy to Vercel and set the key in the project env
+- [ ] Record the 3–5 minute pitch video
 
 Out of scope: utility-bill photo upload, dropped for privacy (uploading a real bill is exactly the kind of private data the brief warns against).
 
@@ -81,22 +83,34 @@ curl -s -X POST http://localhost:3000/api/analyze \
 
 ```
 app/
-  page.tsx              landing page
-  analyze/page.tsx      case-file view of the loaded school
-  api/analyze/route.ts  serverless: school -> evidence -> detective -> JSON
+  page.tsx               landing + working profile intake (autofill -> analyze)
+  analyze/page.tsx       results dashboard (calls /api/analyze, fallback offline)
+  api/analyze/route.ts   serverless: school -> evidence -> detective -> JSON
+  api/simulate/route.ts  pure what-if math + intervention catalog (no LLM)
 lib/
-  schema.ts             shared types (the contract between data and UI)
-  factors.ts            emission + cost factors, each with a source
-  calc.ts               Layer 1: inputs -> CO2 + cost (pure, runs client too)
-  benchmarks.ts         Layer 2: anomalies, peer percentile, confidence
-  interventions.ts      ROI library the detective chooses fixes from
-  detectivePrompt.ts    the detective's system prompt
-  detective.ts          Layer 3: the Claude call (structured output)
+  schema.ts              shared types (the contract between data and UI)
+  flagship.ts            the demo's named school + hero-user narrative
+  factors.ts             emission + cost factors, each with a source
+  calc.ts                Layer 1: inputs -> CO2 + cost (pure, runs client too)
+  estimate.ts            benchmark autofill: profile -> full estimated inputs
+  benchmarks.ts          Layer 2: anomalies, peer percentile, confidence gate
+  interventions.ts       ROI library the detective chooses fixes from
+  rebates.ts             local/federal incentives matched to fixes
+  detectivePrompt.ts     the detective's system prompt
+  detective.ts           Layer 3: the Claude call (structured output)
+  localDetective.ts      deterministic offline detective (demo-safe fallback)
+  simulate.ts            what-if engine (pure; powers the simulator)
+components/              ConfidenceMeter, ImpactCard, PeerGauge, RebateBadge,
+                         WhatIfSimulator, ProjectionChart
 data/
-  school.json           placeholder demo school (swap for a real one)
-  peers.json            synthetic peer schools for percentile ranking
-scripts/                gen-peers + smoke tests
+  school.json            flagship demo school (swap for a real one)
+  peers.json             synthetic peer schools for percentile ranking
+  rebates.json           curated local + federal incentive programs
+scripts/                 gen-peers + smoke tests (calc, packet, simulate,
+                         detective-local, estimate)
 ```
+
+See [DEVPOST.md](DEVPOST.md) for the pre-written submission fields.
 
 ## Responsible AI
 

@@ -1,9 +1,7 @@
-'use client';
-
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { type ReactElement, useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -15,28 +13,33 @@ import {
   YAxis,
 } from "recharts";
 import demoSchool from "@/data/school.json";
+import { FLAGSHIP } from "@/lib/flagship";
 import { buildEvidencePacket } from "@/lib/benchmarks";
-import { interventionsFor } from "@/lib/interventions";
-import type { CategoryKey, SchoolData } from "@/lib/schema";
+import { estimateFromProfile } from "@/lib/estimate";
+import { runLocalDetective } from "@/lib/localDetective";
+import { rebatesForCategory } from "@/lib/rebates";
+import { ConfidenceMeter } from "@/components/ConfidenceMeter";
+import { ImpactCard } from "@/components/ImpactCard";
+import { PeerGauge } from "@/components/PeerGauge";
+import { WhatIfSimulator } from "@/components/WhatIfSimulator";
+import type { AnalyzeResponse, CategoryKey, SchoolData } from "@/lib/schema";
 
 const school = demoSchool as unknown as SchoolData;
-const evidence = buildEvidencePacket(school);
 
-const CATEGORIES: { key: CategoryKey; label: string; icon: string }[] = [
-  { key: "energy", label: "Energy", icon: "⚡" },
-  { key: "water", label: "Water", icon: "💧" },
-  { key: "waste", label: "Waste", icon: "🗑️" },
-  { key: "transportation", label: "Transportation", icon: "🚌" },
-  { key: "food", label: "Food", icon: "🍎" },
-];
-
-const COLORS = {
-  energy: "#10b981",
-  water: "#0ea5e9",
-  waste: "#f59e0b",
-  transportation: "#8b5cf6",
-  food: "#ef4444",
+const CATEGORY_META: Record<CategoryKey, { label: string; icon: string; color: string }> = {
+  energy: { label: "Energy", icon: "⚡", color: "#10b981" },
+  water: { label: "Water", icon: "💧", color: "#0ea5e9" },
+  waste: { label: "Waste", icon: "🗑️", color: "#f59e0b" },
+  transportation: { label: "Transportation", icon: "🚌", color: "#8b5cf6" },
+  food: { label: "Food", icon: "🍎", color: "#ef4444" },
 };
+
+const LABEL_TO_KEY: Record<string, CategoryKey> = Object.fromEntries(
+  (Object.keys(CATEGORY_META) as CategoryKey[]).map((k) => [
+    CATEGORY_META[k].label,
+    k,
+  ]),
+);
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -46,88 +49,108 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-function shortLabel(key: CategoryKey) {
-  return CATEGORIES.find((item) => item.key === key)?.label ?? key;
-}
-
-function safeText(value: string | number | undefined, fallback = "Not available") {
-  if (value === undefined || value === null || value === "") return fallback;
-  return String(value);
-}
+type Source = "loading" | "ai" | "fallback";
 
 export default function AnalyzePage() {
   const [mode, setMode] = useState<"Admin" | "Student">("Admin");
+  const [dataMode, setDataMode] = useState<"full" | "estimate">("full");
+  const [runId, setRunId] = useState(0);
+
+  // Base school: the flagship demo by default, or a school the user submitted
+  // from the landing intake (stashed in sessionStorage so it survives the
+  // route change). SSR renders the flagship; the custom school swaps in client-side.
+  const [baseSchool, setBaseSchool] = useState<SchoolData>(school);
+  useEffect(() => {
+    // Read the browser-only sessionStorage AFTER mount: reading it during
+    // render would diverge from the SSR HTML (which has no sessionStorage) and
+    // break hydration. This is the sanctioned "sync from an external store"
+    // effect, so the set-state-in-effect rule does not apply.
+    try {
+      const raw = sessionStorage.getItem("greenspark.school");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (raw) setBaseSchool(JSON.parse(raw) as SchoolData);
+    } catch {
+      /* ignore malformed storage */
+    }
+  }, []);
+
+  const isFlagship = baseSchool.profile.name === school.profile.name;
+
+  // The school under analysis: either the full entered data or a profile-only
+  // benchmark autofill (which the confidence gate scores Low).
+  const activeSchool = useMemo(
+    () => (dataMode === "full" ? baseSchool : estimateFromProfile(baseSchool.profile)),
+    [dataMode, baseSchool],
+  );
+
+  // Instant, client-side baseline so charts and cards render with zero wait;
+  // the real Claude analysis then replaces it when /api/analyze responds.
+  const localEvidence = useMemo(
+    () => buildEvidencePacket(activeSchool),
+    [activeSchool],
+  );
+  const localResponse = useMemo<AnalyzeResponse>(
+    () => ({ evidence: localEvidence, detective: runLocalDetective(localEvidence) }),
+    [localEvidence],
+  );
+
+  const [data, setData] = useState<AnalyzeResponse>(localResponse);
+  const [source, setSource] = useState<Source>("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setSource("loading");
+      try {
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(activeSchool),
+        });
+        if (!res.ok) throw new Error("analyze failed");
+        const json = (await res.json()) as AnalyzeResponse;
+        if (!cancelled) {
+          setData(json);
+          setSource("ai");
+        }
+      } catch {
+        if (!cancelled) {
+          setData(localResponse);
+          setSource("fallback");
+        }
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSchool, localResponse, runId]);
+
+  const { evidence, detective } = data;
 
   const chartData = useMemo(
     () =>
-      evidence.categories.map((item) => ({
-        name: shortLabel(item.category),
-        impact: Math.max(item.annualCo2eKg / 1000, 0),
-        cost: item.annualCostUsd,
-        category: item.category,
+      evidence.categories.map((c) => ({
+        name: CATEGORY_META[c.category].label,
+        co2t: Math.max(c.annualCo2eKg / 1000, 0),
+        cost: c.annualCostUsd,
+        category: c.category,
       })),
-    [],
+    [evidence],
   );
 
-  const topCategory = useMemo(() => {
-    const sorted = [...evidence.categories].sort(
-      (a, b) => b.annualCo2eKg - a.annualCo2eKg,
-    );
-    return sorted[0] ?? null;
-  }, []);
+  const topImpactLabel = detective.top_impacts[0]?.category ?? "—";
 
-  const interventions = useMemo(
-    () => interventionsFor(evidence.categories.map((item) => item.category)),
-    [],
+  const studentPoints = useMemo(
+    () =>
+      detective.top_impacts.slice(0, 3).map((t) => ({
+        category: t.category,
+        headline: t.recommendations[0]?.action ?? t.quick_win,
+        quickWin: t.quick_win,
+        save: t.recommendations[0]?.estimated_annual_savings ?? "",
+      })),
+    [detective],
   );
-
-  const recommendationCards = useMemo(() => {
-    return interventions.map((intervention) => {
-      const category = evidence.categories.find(
-        (item) => item.category === intervention.category,
-      );
-      const savings = category
-        ? Math.round(category.annualCostUsd * intervention.savingsPctOfCategory)
-        : 0;
-      return {
-        ...intervention,
-        savings,
-        categoryLabel: shortLabel(intervention.category),
-      };
-    });
-  }, []);
-
-  const quickWin = useMemo(() => {
-    return (
-      recommendationCards.find((item) => item.quickWin) ??
-      recommendationCards[0] ??
-      null
-    );
-  }, [recommendationCards]);
-
-  const detectiveNarrative = useMemo(() => {
-    if (!topCategory) {
-      return "The evidence set is still limited, so the detective recommends using the best available data with caution.";
-    }
-
-    const anomaly = topCategory.anomalyFlag
-      ? `A major clue is ${topCategory.anomalyFlag.toLowerCase()}.`
-      : "The category appears notably large compared with the school benchmark.";
-
-    return `Upon closer inspection, the evidence suggests that ${shortLabel(
-      topCategory.category,
-    ).toLowerCase()} is your school's largest environmental impact. ${anomaly} The detective recommends focusing first on the actions with the strongest savings potential.`;
-  }, [topCategory]);
-
-  const studentTalkingPoints = useMemo(() => {
-    return recommendationCards.slice(0, 3).map((item, index) => ({
-      title: item.action,
-      detail:
-        index === 0
-          ? "This is the most immediate way to reduce waste and cost."
-          : "This can help your school show visible progress quickly.",
-    }));
-  }, [recommendationCards]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -141,261 +164,323 @@ export default function AnalyzePage() {
         </Link>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-6 pb-16">
+      <main className="mx-auto w-full max-w-7xl px-6 pb-20">
+        {/* Case file header */}
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-600">
-                Case file
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold uppercase tracking-wide text-emerald-600">
+                  Case file
+                </p>
+                <SourcePill source={source} />
+              </div>
               <h1 className="mt-1 text-3xl font-bold tracking-tight">
-                {safeText(school.profile.name)}
+                {evidence.profile.name}
               </h1>
               <p className="mt-1 text-slate-600">
-                {safeText(school.profile.city)}, {safeText(school.profile.state)} · {safeText(school.profile.students)} students · {safeText(school.profile.squareFootage)} ft²
+                {evidence.profile.city}, {evidence.profile.state} ·{" "}
+                {evidence.profile.students.toLocaleString()} students ·{" "}
+                {evidence.profile.squareFootage.toLocaleString()} ft²
               </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setMode("Admin")}
-                className={`rounded-full px-4 py-2 text-sm font-medium ${
-                  mode === "Admin"
-                    ? "bg-emerald-600 text-white"
-                    : "bg-slate-100 text-slate-700"
-                }`}
-              >
-                Admin View
-              </button>
-              <button
-                onClick={() => setMode("Student")}
-                className={`rounded-full px-4 py-2 text-sm font-medium ${
-                  mode === "Student"
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-slate-100 text-slate-700"
-                }`}
-              >
-                Student Ambassador View
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-6 grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-slate-400">Estimated annual CO₂</p>
-            <p className="mt-2 text-3xl font-semibold">{evidence.totals.annualCo2eKg.toLocaleString()} kg</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-slate-400">Estimated annual cost</p>
-            <p className="mt-2 text-3xl font-semibold">{formatCurrency(evidence.totals.annualCostUsd)}</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-slate-400">Data completeness</p>
-            <p className="mt-2 text-3xl font-semibold">{evidence.completenessScore}%</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-slate-400">Top impact</p>
-            <p className="mt-2 text-3xl font-semibold">{topCategory ? shortLabel(topCategory.category) : "Not available"}</p>
-          </div>
-        </section>
-
-        <section className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-emerald-600">
-                  Responsible AI note
+              {isFlagship && (
+                <p className="mt-2 max-w-2xl text-sm text-slate-500">
+                  Opened by{" "}
+                  <span className="font-medium text-slate-700">{FLAGSHIP.hero.name}</span>,{" "}
+                  {FLAGSHIP.hero.role}, to {FLAGSHIP.hero.goal}.
                 </p>
-                <h2 className="mt-1 text-2xl font-semibold">Data confidence</h2>
-              </div>
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-                {evidence.confidenceLevel} confidence
-              </span>
+              )}
             </div>
-            <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-slate-100">
-              <div
-                className="h-full rounded-full bg-emerald-500"
-                style={{ width: `${evidence.completenessScore}%` }}
+            <div className="flex shrink-0 flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+              <button
+                onClick={() => setRunId((n) => n + 1)}
+                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-emerald-300 hover:text-emerald-700"
+              >
+                ↻ Re-run detective
+              </button>
+              <div className="flex items-center gap-1 rounded-full bg-slate-100 p-1">
+                <button
+                  onClick={() => setMode("Admin")}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium ${mode === "Admin" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
+                >
+                  Admin
+                </button>
+                <button
+                  onClick={() => setMode("Student")}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium ${mode === "Student" ? "bg-white text-amber-700 shadow-sm" : "text-slate-500"}`}
+                >
+                  Student pitch
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Data-source toggle — demonstrates the confidence gate live */}
+        <section className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <span className="text-sm font-medium text-slate-600">Data source</span>
+          <div className="flex gap-1 rounded-full bg-slate-100 p-1">
+            <button
+              onClick={() => setDataMode("full")}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium ${dataMode === "full" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
+            >
+              Full data (entered)
+            </button>
+            <button
+              onClick={() => setDataMode("estimate")}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium ${dataMode === "estimate" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
+            >
+              Profile-only (benchmark autofill)
+            </button>
+          </div>
+          <span className="text-xs text-slate-400">
+            {dataMode === "full"
+              ? "Using the school's entered usage figures."
+              : "Every category estimated from medians for a school this size — watch confidence drop to Low."}
+          </span>
+        </section>
+
+        {/* Headline stats */}
+        <section className="mt-6 grid gap-4 md:grid-cols-4">
+          <StatCard
+            label="Annual CO₂"
+            value={`${Math.round(evidence.totals.annualCo2eKg / 1000).toLocaleString()} t`}
+          />
+          <StatCard
+            label="Annual cost"
+            value={formatCurrency(evidence.totals.annualCostUsd)}
+          />
+          <StatCard label="Data completeness" value={`${evidence.completenessScore}%`} />
+          <StatCard label="Top impact" value={topImpactLabel} />
+        </section>
+
+        {mode === "Admin" ? (
+          <>
+            {/* Verdict + confidence */}
+            <section className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+                <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+                  🔍 The detective&apos;s verdict
+                </p>
+                <p className="mt-3 text-lg leading-7 text-slate-800">
+                  {detective.overall_verdict}
+                </p>
+              </div>
+              <ConfidenceMeter
+                level={detective.confidence_level}
+                score={evidence.completenessScore}
+                explanation={detective.confidence_explanation}
+                missingCount={evidence.missingCategories.length}
               />
-            </div>
-            <p className="mt-3 text-sm text-slate-600">
-              The AI Detective’s recommendations are based on the data provided. Missing or estimated data may affect accuracy.
-            </p>
-            <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-              <p className="font-medium">Missing data warning</p>
-              <p className="mt-1">
-                {evidence.missingCategories.length > 0
-                  ? `Missing categories: ${evidence.missingCategories.join(", ")}`
-                  : "No missing categories detected for this demo."}
-              </p>
-            </div>
-          </div>
+            </section>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-wide text-emerald-600">
-              Environmental impact chart
-            </p>
-            <div className="mt-4 h-72">
-              <ResponsiveContainer width="100%" height="100%">
+            {/* Charts */}
+            <section className="mt-6 grid gap-6 xl:grid-cols-2">
+              <ChartCard title="Carbon footprint by category (t CO₂e / year)">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <Tooltip />
-                  <Bar dataKey="impact" radius={[6, 6, 0, 0]}>
-                    {chartData.map((entry) => (
-                      <Cell key={entry.category} fill={COLORS[entry.category] || "#0f766e"} />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
+                  <YAxis tickLine={false} axisLine={false} fontSize={12} />
+                  <Tooltip formatter={(v) => `${Math.round(Number(v))} t`} />
+                  <Bar dataKey="co2t" radius={[6, 6, 0, 0]}>
+                    {chartData.map((e) => (
+                      <Cell key={e.category} fill={CATEGORY_META[e.category].color} />
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_1fr]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-wide text-emerald-600">
-              Cost breakdown
-            </p>
-            <div className="mt-4 h-72">
-              <ResponsiveContainer width="100%" height="100%">
+              </ChartCard>
+              <ChartCard title="Annual cost by category ($)">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <Tooltip
-                    formatter={(value) =>
-                      formatCurrency(typeof value === "number" ? value : Number(value ?? 0))
-                    }
-                  />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
+                  <YAxis tickLine={false} axisLine={false} fontSize={12} />
+                  <Tooltip formatter={(v) => formatCurrency(Number(v))} />
                   <Bar dataKey="cost" radius={[6, 6, 0, 0]}>
-                    {chartData.map((entry) => (
-                      <Cell key={entry.category} fill={COLORS[entry.category] || "#0f766e"} />
+                    {chartData.map((e) => (
+                      <Cell key={e.category} fill={CATEGORY_META[e.category].color} />
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+              </ChartCard>
+            </section>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-wide text-emerald-600">
-              AI Detective panel
-            </p>
-            <div className="mt-4 rounded-2xl bg-emerald-50 p-5">
-              <p className="text-sm leading-6 text-slate-700">{detectiveNarrative}</p>
-            </div>
-            <div className="mt-4 space-y-3">
-              {evidence.categories.slice(0, 4).map((item) => (
-                <div key={item.category} className="rounded-2xl border border-slate-200 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold">{shortLabel(item.category)}</p>
-                    <span className="text-sm text-slate-500">{item.peerPercentile ?? 0}th percentile</span>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {item.anomalyFlag ?? "No major anomaly detected from the available data."}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold">Recommendations</h2>
-              <span className="text-sm text-slate-500">{recommendationCards.length} actions</span>
-            </div>
-            <div className="space-y-4">
-              {recommendationCards.map((item) => (
-                <div key={item.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{item.categoryLabel}</p>
-                      <h3 className="mt-1 text-xl font-semibold">{item.action}</h3>
-                    </div>
-                    <button className="rounded-full bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
-                      Mark as Priority
-                    </button>
-                  </div>
-                  <p className="mt-3 text-sm text-slate-600">{item.co2Note}</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-400">Estimated savings</p>
-                      <p className="mt-1 font-semibold">{formatCurrency(item.savings)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-400">Payback</p>
-                      <p className="mt-1 font-semibold">{item.paybackMonths[0] === item.paybackMonths[1] && item.paybackMonths[0] === 0 ? "Immediate" : `${item.paybackMonths[0]}–${item.paybackMonths[1]} months`}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-400">Confidence</p>
-                      <p className="mt-1 font-semibold">{evidence.confidenceLevel}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {quickWin ? (
-              <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-                <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">Quick win</p>
-                <h3 className="mt-2 text-2xl font-semibold">{quickWin.action}</h3>
-                <p className="mt-3 text-sm text-slate-700">{quickWin.co2Note}</p>
-                <div className="mt-4 flex items-center justify-between rounded-2xl bg-white p-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-400">Potential savings</p>
-                    <p className="mt-1 font-semibold">{formatCurrency(quickWin.savings)}</p>
-                  </div>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                    {quickWin.paybackMonths[0] === quickWin.paybackMonths[1] && quickWin.paybackMonths[0] === 0 ? "Immediate" : "Low cost"}
-                  </span>
-                </div>
+            {/* Ranked impacts (the real detective output) */}
+            <section className="mt-8">
+              <div className="flex items-end justify-between">
+                <h2 className="text-2xl font-semibold">Ranked impacts &amp; the fix</h2>
+                <p className="text-sm text-slate-500">
+                  Top {detective.top_impacts.length}, ranked by carbon, cost, and
+                  how far above peers
+                </p>
               </div>
-            ) : null}
+              <div className="mt-4 grid gap-5 lg:grid-cols-3">
+                {detective.top_impacts.map((impact) => {
+                  const key = LABEL_TO_KEY[impact.category];
+                  return (
+                    <ImpactCard
+                      key={impact.rank}
+                      impact={impact}
+                      rebates={key ? rebatesForCategory(key) : []}
+                    />
+                  );
+                })}
+              </div>
+            </section>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            {/* Peer benchmarking */}
+            <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-sm font-semibold uppercase tracking-wide text-emerald-600">
                 Peer benchmarking
               </p>
-              <p className="mt-3 text-sm text-slate-600">
-                Benchmarking data is not available yet. This section can later compare your school with similar schools.
+              <h2 className="mt-1 text-2xl font-semibold">
+                How {evidence.profile.name} compares to similar-size schools
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Percentile across ~40 peer schools. The marker is the peer median.
+                Higher means more intensive, so more to gain.
               </p>
-            </div>
-          </div>
-        </section>
-
-        {mode === "Student" ? (
-          <section className="mt-6 rounded-3xl border border-amber-100 bg-amber-50 p-6 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">
-              Student ambassador mode
-            </p>
-            <div className="mt-3 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-              <div>
-                <ul className="space-y-3">
-                  {studentTalkingPoints.map((item, index) => (
-                    <li key={index} className="rounded-2xl bg-white p-4">
-                      <p className="font-semibold">{item.title}</p>
-                      <p className="mt-1 text-sm text-slate-600">{item.detail}</p>
-                    </li>
+              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {evidence.categories
+                  .filter((c) => c.peerPercentile != null && c.benchmark)
+                  .map((c) => (
+                    <PeerGauge
+                      key={c.category}
+                      label={`${CATEGORY_META[c.category].icon} ${CATEGORY_META[c.category].label} · ${c.benchmark!.label}`}
+                      percentile={c.peerPercentile!}
+                      value={c.intensityMetric!.value}
+                      unit={c.intensityMetric!.unit}
+                      median={c.benchmark!.median}
+                    />
                   ))}
-                </ul>
               </div>
-              <div className="rounded-2xl bg-white p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Student-led action</p>
-                <h3 className="mt-1 text-xl font-semibold">{quickWin?.action ?? "Start with a small waste reduction campaign"}</h3>
-                <p className="mt-3 text-sm text-slate-600">
-                  Use this as a simple first step to show progress and build momentum.
-                </p>
-              </div>
-            </div>
-          </section>
-        ) : null}
+            </section>
+
+            {/* What-if simulator + 12-month projection */}
+            <WhatIfSimulator school={activeSchool} />
+          </>
+        ) : (
+          <StudentPitch
+            schoolName={evidence.profile.name}
+            heroName={FLAGSHIP.hero.name}
+            verdict={detective.overall_verdict}
+            points={studentPoints}
+            co2t={Math.round(evidence.totals.annualCo2eKg / 1000)}
+          />
+        )}
+
+        {/* Data disclosure */}
+        <p className="mt-10 rounded-2xl bg-slate-100 p-4 text-xs leading-5 text-slate-500">
+          {isFlagship
+            ? FLAGSHIP.dataNote
+            : "This school was analyzed from the profile you entered. Categories marked estimated are filled from published EPA, EIA, and DOE benchmark medians for a school this size and are weighted lower by the confidence gate. No private school data is required."}
+        </p>
       </main>
     </div>
+  );
+}
+
+function SourcePill({ source }: { source: Source }) {
+  if (source === "loading")
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
+        Detective analyzing…
+      </span>
+    );
+  if (source === "ai")
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+        ✦ Analyzed live by Claude
+      </span>
+    );
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600"
+      title="The Claude API key is not set or the call failed, so this is the deterministic offline estimate."
+    >
+      ◳ Offline estimate (AI key not set)
+    </span>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-2 text-3xl font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function ChartCard({ title, children }: { title: string; children: ReactElement }) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <p className="text-sm font-semibold uppercase tracking-wide text-emerald-600">
+        {title}
+      </p>
+      <div className="mt-4 h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          {children}
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function StudentPitch({
+  schoolName,
+  heroName,
+  verdict,
+  points,
+  co2t,
+}: {
+  schoolName: string;
+  heroName: string;
+  verdict: string;
+  points: { category: string; headline: string; quickWin: string; save: string }[];
+  co2t: number;
+}) {
+  return (
+    <section className="mt-6 space-y-6">
+      <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">
+          Student pitch mode · for {heroName} to bring to the principal
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+          {schoolName} can act on three things this year.
+        </h2>
+        <p className="mt-2 text-slate-700">{verdict}</p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {points.map((p, i) => (
+          <div key={i} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-800">
+              {i + 1}
+            </span>
+            <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              {p.category}
+            </p>
+            <p className="mt-1 font-semibold">{p.headline}</p>
+            {p.save && (
+              <p className="mt-2 text-sm text-emerald-700">Saves about {p.save}</p>
+            )}
+            <p className="mt-2 text-sm text-slate-600">
+              <span className="font-medium">Start this week:</span> {p.quickWin}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+        <p className="text-sm text-slate-500">
+          One school. {co2t.toLocaleString()} tonnes of CO₂ a year. Three changes
+          we can start now.
+        </p>
+        <p className="mt-1 text-lg font-semibold">
+          That is {heroName}&apos;s case, in numbers the office can act on.
+        </p>
+      </div>
+    </section>
   );
 }
