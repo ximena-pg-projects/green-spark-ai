@@ -1,13 +1,14 @@
 {
   "profile": {
-    "name": "Sample High School",
-    "city": "Anytown",
-    "state": "ST",
+    "name": "Mesa Verde High School",
+    "city": "Austin",
+    "state": "TX",
     "country": "USA",
     "schoolType": "Secondary",
     "squareFootage": 142000,
     "students": 1210,
-    "staff": 95
+    "staff": 95,
+    "gridRegion": "ERCT"
   },
   "energy": {
     "monthlyElectricBill": 13100,

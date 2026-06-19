@@ -89,6 +89,12 @@ export interface SchoolData {
   waste?: WasteInputs;
   transportation?: TransportationInputs;
   food?: FoodInputs;
+  /**
+   * Categories whose inputs were benchmark-estimated (lib/estimate.ts), not
+   * entered by the user. The confidence gate weights these lower so a
+   * profile-only autofill lands at Low/Medium confidence, never High.
+   */
+  estimatedCategories?: CategoryKey[];
 }
 
 // ── Layers 1 & 2 output: the "evidence packet" handed to the LLM detective.
@@ -113,6 +119,7 @@ export interface EvidencePacket {
   completenessScore: number; // 0–100, impact-weighted fields filled
   confidenceLevel: ConfidenceLevel; // gates the detective's certainty
   missingCategories: CategoryKey[];
+  estimatedCategories: CategoryKey[]; // present but benchmark-estimated, not entered
 }
 
 // ── Layer 3 output: the detective's structured analysis.
