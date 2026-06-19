@@ -37,12 +37,13 @@ Built and verified (compiles, lints, smoke-tested):
 - [x] Intervention ROI library (`lib/interventions.ts`)
 - [x] AI detective and serverless route (`lib/detective.ts`, `lib/detectivePrompt.ts`, `app/api/analyze/route.ts`)
 - [x] Landing page and case-file data preview (`app/page.tsx`, `app/analyze/page.tsx`)
-
+- [x] What-if simulator backend (`lib/simulate.ts`, `app/api/simulate/route.ts`) — stacks interventions from the ROI library, applies them as cost/CO2 reductions on top of the Layer 1 footprint, and returns baseline vs. projected vs. delta with no LLM call needed
 Next up:
 
 - [ ] Front-end results dashboard (charts, impact cards, confidence badge) wired to `/api/analyze`
 - [ ] Input form with benchmark autofill
-- [ ] What-if simulator and 12-month projection
+- [ ] What-if simulator UI (sliders/checkboxes wired to `/api/simulate`)
+- [ ] 12-month projection view on top of the simulator
 - [ ] Local rebates tied to each recommendation
 - [ ] Swap the placeholder school for a real US school
 - [ ] Deploy to Vercel
