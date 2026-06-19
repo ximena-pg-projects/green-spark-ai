@@ -107,11 +107,24 @@ export function buildEvidencePacket(school: SchoolData): EvidencePacket {
   const present = new Set(categories.map((c) => c.category));
   const missingCategories = ALL.filter((k) => !present.has(k));
 
-  // Impact-weighted completeness: each category contributes weight × tier credit.
+  // Categories that were benchmark-estimated rather than entered. Only count
+  // those that actually produced a computed category.
+  const estimatedSet = new Set(school.estimatedCategories ?? []);
+  const estimatedCategories = ALL.filter(
+    (k) => estimatedSet.has(k) && present.has(k),
+  );
+
+  // Impact-weighted completeness: each category contributes weight × tier
+  // credit. An estimated category is capped at the lowest (profile) credit so a
+  // profile-only autofill can never read as a complete, high-confidence audit.
   let score = 0;
   for (const k of ALL) {
     const cat = categories.find((c) => c.category === k);
-    score += IMPACT_WEIGHT[k] * (cat ? TIER_CREDIT[cat.tier] : 0);
+    if (!cat) continue;
+    const credit = estimatedSet.has(k)
+      ? Math.min(TIER_CREDIT[cat.tier], TIER_CREDIT.profile)
+      : TIER_CREDIT[cat.tier];
+    score += IMPACT_WEIGHT[k] * credit;
   }
   const completenessScore = Math.round(score * 100);
   const confidenceLevel: ConfidenceLevel =
@@ -124,5 +137,6 @@ export function buildEvidencePacket(school: SchoolData): EvidencePacket {
     completenessScore,
     confidenceLevel,
     missingCategories,
+    estimatedCategories,
   };
 }

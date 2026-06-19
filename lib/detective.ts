@@ -11,6 +11,7 @@ import { z } from "zod";
 import type { DetectiveOutput, EvidencePacket } from "./schema";
 import { DETECTIVE_SYSTEM } from "./detectivePrompt";
 import { interventionsFor } from "./interventions";
+import { rebatesForInterventions } from "./rebates";
 
 const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
 
@@ -106,12 +107,14 @@ export async function runDetective(
   const interventions = interventionsFor(
     evidence.categories.map((c) => c.category),
   );
+  const rebates = rebatesForInterventions(interventions.map((i) => i.id));
 
   const packet = {
     school: evidence.profile,
     confidence_level: evidence.confidenceLevel,
     completeness_score: evidence.completenessScore,
     missing_categories: evidence.missingCategories,
+    estimated_categories: evidence.estimatedCategories,
     totals: evidence.totals,
     categories: evidence.categories.map((c) => ({
       category: c.category,
@@ -124,6 +127,7 @@ export async function runDetective(
       peer_percentile: c.peerPercentile,
     })),
     intervention_options: interventions,
+    local_rebates: rebates,
   };
 
   const response = await client.messages.create({
