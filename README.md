@@ -41,6 +41,7 @@ Built and verified (compiles, lints, smoke-tested):
 - [x] Confidence meter, ranked impact cards, peer gauge, student-pitch toggle (`components/`)
 - [x] What-if simulator + 12-month projection, recomputing client-side (`lib/simulate.ts`, `components/WhatIfSimulator.tsx`, `components/ProjectionChart.tsx`, `app/api/simulate/route.ts`)
 - [x] Benchmark autofill + Low-confidence path (`lib/estimate.ts`) and a working profile intake on the landing page
+- [x] Dashboard real-number entry: type a real usage figure (from the bill / front office) and that category graduates from estimate to measured, climbing the confidence meter Low → Medium → High (`lib/usage.ts`, `components/UsageEntry.tsx`)
 - [x] Local + federal rebates matched to each fix (`data/rebates.json`, `lib/rebates.ts`, `components/RebateBadge.tsx`)
 
 Next up:
@@ -93,6 +94,7 @@ lib/
   factors.ts             emission + cost factors, each with a source
   calc.ts                Layer 1: inputs -> CO2 + cost (pure, runs client too)
   estimate.ts            benchmark autofill: profile -> full estimated inputs
+  usage.ts               "I have the real number" overrides -> graduate a category
   benchmarks.ts          Layer 2: anomalies, peer percentile, confidence gate
   interventions.ts       ROI library the detective chooses fixes from
   rebates.ts             local/federal incentives matched to fixes
@@ -101,13 +103,13 @@ lib/
   localDetective.ts      deterministic offline detective (demo-safe fallback)
   simulate.ts            what-if engine (pure; powers the simulator)
 components/              ConfidenceMeter, ImpactCard, PeerGauge, RebateBadge,
-                         WhatIfSimulator, ProjectionChart
+                         WhatIfSimulator, ProjectionChart, UsageEntry
 data/
   school.json            flagship demo school (swap for a real one)
   peers.json             synthetic peer schools for percentile ranking
   rebates.json           curated local + federal incentive programs
 scripts/                 gen-peers + smoke tests (calc, packet, simulate,
-                         detective-local, estimate)
+                         detective-local, estimate, usage)
 ```
 
 See [DEVPOST.md](DEVPOST.md) for the pre-written submission fields.

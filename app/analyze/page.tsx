@@ -22,6 +22,8 @@ import { ConfidenceMeter } from "@/components/ConfidenceMeter";
 import { ImpactCard } from "@/components/ImpactCard";
 import { PeerGauge } from "@/components/PeerGauge";
 import { WhatIfSimulator } from "@/components/WhatIfSimulator";
+import { UsageEntry } from "@/components/UsageEntry";
+import { withRealUsage } from "@/lib/usage";
 import type { AnalyzeResponse, CategoryKey, SchoolData } from "@/lib/schema";
 
 const school = demoSchool as unknown as SchoolData;
@@ -55,6 +57,9 @@ export default function AnalyzePage() {
   const [mode, setMode] = useState<"Admin" | "Student">("Admin");
   const [dataMode, setDataMode] = useState<"full" | "estimate">("full");
   const [runId, setRunId] = useState(0);
+  // Real numbers the user typed into the usage panel, keyed by category. Each one
+  // overrides the estimate AND graduates that category to measured data.
+  const [overrides, setOverrides] = useState<Partial<Record<CategoryKey, number>>>({});
 
   // Base school: the flagship demo by default, or a school the user submitted
   // from the landing intake (stashed in sessionStorage so it survives the
@@ -83,11 +88,19 @@ export default function AnalyzePage() {
     [dataMode, baseSchool],
   );
 
+  // The school actually analyzed: activeSchool with any real numbers the user
+  // entered in the usage panel layered on top. Those categories graduate out of
+  // `estimatedCategories`, so the confidence gate scores them as measured.
+  const effectiveSchool = useMemo(
+    () => withRealUsage(activeSchool, overrides),
+    [activeSchool, overrides],
+  );
+
   // Instant, client-side baseline so charts and cards render with zero wait;
   // the real Claude analysis then replaces it when /api/analyze responds.
   const localEvidence = useMemo(
-    () => buildEvidencePacket(activeSchool),
-    [activeSchool],
+    () => buildEvidencePacket(effectiveSchool),
+    [effectiveSchool],
   );
   const localResponse = useMemo<AnalyzeResponse>(
     () => ({ evidence: localEvidence, detective: runLocalDetective(localEvidence) }),
@@ -105,7 +118,7 @@ export default function AnalyzePage() {
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(activeSchool),
+          body: JSON.stringify(effectiveSchool),
         });
         if (!res.ok) throw new Error("analyze failed");
         const json = (await res.json()) as AnalyzeResponse;
@@ -124,9 +137,18 @@ export default function AnalyzePage() {
     return () => {
       cancelled = true;
     };
-  }, [activeSchool, localResponse, runId]);
+  }, [effectiveSchool, localResponse, runId]);
 
   const { evidence, detective } = data;
+
+  const handleUsageChange = (key: CategoryKey, value: number | undefined) => {
+    setOverrides((prev) => {
+      const next = { ...prev };
+      if (value == null) delete next[key];
+      else next[key] = value;
+      return next;
+    });
+  };
 
   const chartData = useMemo(
     () =>
@@ -256,6 +278,15 @@ export default function AnalyzePage() {
 
         {mode === "Admin" ? (
           <>
+            {/* Enter real numbers to graduate estimates → higher confidence */}
+            <div className="mt-6">
+              <UsageEntry
+                school={activeSchool}
+                overrides={overrides}
+                onChange={handleUsageChange}
+              />
+            </div>
+
             {/* Verdict + confidence */}
             <section className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
@@ -356,7 +387,7 @@ export default function AnalyzePage() {
             </section>
 
             {/* What-if simulator + 12-month projection */}
-            <WhatIfSimulator school={activeSchool} />
+            <WhatIfSimulator school={effectiveSchool} />
           </>
         ) : (
           <StudentPitch
