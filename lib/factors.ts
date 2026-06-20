@@ -11,6 +11,7 @@
 /** Grid CO2e intensity (kg CO2e per kWh) by EPA eGRID2022 subregion. */
 export const GRID_CO2E_KG_PER_KWH: Record<string, number> = {
   US_AVG: 0.4,
+  ISNE: 0.23, // ISO-NE / New England (EPA eGRID NEWE subregion)
   ERCT: 0.41, // ERCOT / South-central grid
   NYUP: 0.13, // Upstate NY
   NYCW: 0.29, // NYC + Westchester

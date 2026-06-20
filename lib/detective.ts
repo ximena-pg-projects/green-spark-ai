@@ -184,7 +184,8 @@ export async function runDetective(
       // Disable "thinking" — the task is rule-application over a packet, so this
       // keeps the call fast and cheap (important on the free tier).
       thinkingConfig: { thinkingBudget: 0 },
-      temperature: 0.4,
+      // Low temperature for stable, repeatable ranking during a live demo.
+      temperature: 0.2,
       maxOutputTokens: 4096,
     },
   };

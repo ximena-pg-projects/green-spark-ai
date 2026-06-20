@@ -2,7 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // A deterministic, offline stand-in for the LLM detective (Layer 3).
 //
-// Why this exists: the real detective (lib/detective.ts) calls Claude and needs
+// Why this exists: the real detective (lib/detective.ts) calls Gemini and needs
 // an API key + network. For a live demo that must never blank out, the dashboard
 // calls /api/analyze first and falls back to THIS if the key is missing or the
 // call fails. It is pure (no I/O, no Date/Math.random) so it also runs in the

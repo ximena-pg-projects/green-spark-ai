@@ -15,10 +15,41 @@ const mono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Resolve the canonical site URL so social-link previews work on the deployed
+// site. On Vercel this is set automatically; locally it falls back to localhost.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
+
+const TITLE = "Green Spark AI | Our School, Clearly Seen";
+const DESCRIPTION =
+  "An environmental AI detective for a school's Eco Club. It turns the school's energy, water, waste, transport, and food numbers into a short, costed action plan.";
+
 export const metadata: Metadata = {
-  title: "Green Spark AI | Our School, Clearly Seen",
-  description:
-    "A clear environmental view of our school, the cost behind its footprint, and the changes worth making next.",
+  metadataBase: new URL(siteUrl),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    type: "website",
+    images: [
+      {
+        url: "/images/hanover-high-school.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Green Spark AI — a school's environmental view",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/images/hanover-high-school.jpg"],
+  },
 };
 
 export default function RootLayout({
