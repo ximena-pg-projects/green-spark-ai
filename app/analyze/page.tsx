@@ -140,6 +140,12 @@ export default function AnalyzePage() {
   }, [effectiveSchool, localResponse, runId]);
 
   const { evidence, detective } = data;
+  const needsBuildingSize =
+    evidence.profile.squareFootage == null || evidence.profile.squareFootage <= 0;
+  const dataCompletenessLabel =
+    evidence.categories.length >= 4 && evidence.missingCategories.includes("food")
+      ? "4 of 5 measured"
+      : `${Math.min(evidence.categories.length, 5)} of 5 measured`;
 
   const handleUsageChange = (key: CategoryKey, value: number | undefined) => {
     setOverrides((prev) => {
@@ -203,7 +209,9 @@ export default function AnalyzePage() {
               <p className="mt-1 text-slate-600">
                 {evidence.profile.city}, {evidence.profile.state} ·{" "}
                 {evidence.profile.students.toLocaleString()} students ·{" "}
-                {evidence.profile.squareFootage.toLocaleString()} ft²
+                {evidence.profile.squareFootage != null && evidence.profile.squareFootage > 0
+                  ? `${evidence.profile.squareFootage.toLocaleString()} ft²`
+                  : "Building size not public"}
               </p>
               {isFlagship && (
                 <p className="mt-2 max-w-2xl text-sm text-slate-500">
@@ -272,7 +280,7 @@ export default function AnalyzePage() {
             label="Annual cost"
             value={formatCurrency(evidence.totals.annualCostUsd)}
           />
-          <StatCard label="Data completeness" value={`${evidence.completenessScore}%`} />
+          <StatCard label="Data completeness" value={dataCompletenessLabel} />
           <StatCard label="Top impact" value={topImpactLabel} />
         </section>
 
@@ -370,6 +378,11 @@ export default function AnalyzePage() {
                 Percentile across ~40 peer schools. The marker is the peer median.
                 Higher means more intensive, so more to gain.
               </p>
+              {needsBuildingSize && (
+                <p className="mt-2 text-sm text-amber-700">
+                  Need building square footage to benchmark energy intensity.
+                </p>
+              )}
               <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {evidence.categories
                   .filter((c) => c.peerPercentile != null && c.benchmark)

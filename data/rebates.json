@@ -1,62 +1,42 @@
 [
   {
-    "id": "ae-led",
-    "program": "Austin Energy Commercial Lighting Rebate",
-    "region": "Austin, TX",
+    "id": "nh-saves",
+    "program": "NHSaves energy-efficiency incentives",
+    "region": "New Hampshire",
     "kind": "rebate",
-    "appliesToInterventions": ["led", "monitors-off"],
-    "summary": "Rebates toward LED retrofit and efficient lighting/plug-load upgrades for commercial customers, lowering the upfront cost.",
-    "eligibility": "Austin Energy commercial account; pre-approval before installation.",
-    "source": "Austin Energy — Commercial Energy Efficiency Rebates"
+    "appliesToInterventions": ["led", "monitors-off", "lowflow", "irrigation"],
+    "summary": "Utility and state-backed incentives that can reduce the upfront cost of lighting, controls, and water-saving upgrades.",
+    "eligibility": "New Hampshire schools and commercial accounts; verify current program rules before purchasing.",
+    "source": "NHSaves — energy-efficiency incentives"
   },
   {
-    "id": "fed-itc-solar",
-    "program": "Federal Solar Investment Tax Credit (ITC)",
+    "id": "doe-renew-schools",
+    "program": "DOE Renew America's Schools",
     "region": "Federal",
-    "kind": "tax credit",
-    "appliesToInterventions": ["solar"],
-    "summary": "Covers about 30% of a solar installation's cost as a tax credit (or direct pay for tax-exempt entities under the Inflation Reduction Act), meaningfully shortening payback.",
-    "eligibility": "Schools can use elective/direct pay since they are tax-exempt.",
-    "source": "IRS — Inflation Reduction Act §48 / §6417 elective pay"
+    "kind": "grant",
+    "appliesToInterventions": ["solar", "hvac", "efficiency"],
+    "summary": "Federal support for school energy upgrades that improve efficiency, resilience, and long-term operating costs.",
+    "eligibility": "Public schools and districts participating in eligible federal programs.",
+    "source": "U.S. Department of Energy — Renew America's Schools"
   },
   {
-    "id": "aw-water",
-    "program": "Austin Water Commercial Rebate + EPA WaterSense",
-    "region": "Austin, TX",
-    "kind": "rebate",
-    "appliesToInterventions": ["lowflow", "irrigation"],
-    "summary": "Rebates for low-flow fixtures and smart irrigation controllers; WaterSense-labeled equipment qualifies.",
-    "eligibility": "Austin Water commercial customer; site survey may be required.",
-    "source": "Austin Water — Commercial rebates; EPA WaterSense"
-  },
-  {
-    "id": "arr-divert",
-    "program": "Austin Resource Recovery — Zero Waste support",
-    "region": "Austin, TX",
-    "kind": "program",
-    "appliesToInterventions": ["recycle", "compost"],
-    "summary": "Free Zero Waste consultations, signage, and organics-diversion support that lower the cost of starting recycling and composting.",
-    "eligibility": "Businesses and institutions in Austin; some grants competitive.",
-    "source": "Austin Resource Recovery — Business & institution programs"
-  },
-  {
-    "id": "epa-csb-idle",
-    "program": "EPA Clean School Bus + Texas idle-reduction funds",
-    "region": "Federal / Texas",
+    "id": "epa-csb",
+    "program": "EPA Clean School Bus Program",
+    "region": "Federal",
     "kind": "grant",
     "appliesToInterventions": ["no-idle", "routes"],
-    "summary": "Grants and rebates for cleaner buses and idle-reduction practices; pairs with no-cost anti-idling policy for immediate savings.",
-    "eligibility": "Public school districts; competitive program windows.",
-    "source": "EPA Clean School Bus Program; TCEQ Texas VW Environmental Mitigation"
+    "summary": "Federal support for cleaner school transportation and idle-reduction practices that cut fuel use and emissions.",
+    "eligibility": "Eligible school districts and transportation fleets.",
+    "source": "EPA Clean School Bus Program"
   },
   {
-    "id": "food-rescue",
-    "program": "USDA food-waste support + Central Texas food rescue",
-    "region": "Central TX",
+    "id": "food-audit",
+    "program": "EPA food-waste reduction resources",
+    "region": "National",
     "kind": "program",
     "appliesToInterventions": ["waste-tracking"],
-    "summary": "Tools and local partners for measuring plate waste and donating safe surplus, reducing both disposal cost and hunger.",
-    "eligibility": "K-12 schools; Good Samaritan Act protects food donors.",
-    "source": "USDA / EPA food-waste reduction; local food-rescue nonprofits"
+    "summary": "National guidance and tools for measuring plate waste, improving cafeteria operations, and reducing disposal costs.",
+    "eligibility": "Schools and districts seeking to improve food-waste tracking.",
+    "source": "EPA food-waste reduction resources"
   }
 ]

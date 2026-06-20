@@ -94,11 +94,14 @@ export function calcEnergy(
     ),
     annualCo2eKg: round(co2e),
     annualCostUsd: round(cost),
-    intensityMetric: {
-      label: "Energy intensity",
-      value: round1(kwh / profile.squareFootage),
-      unit: "kWh/ft²·yr",
-    },
+    intensityMetric:
+      profile.squareFootage != null && profile.squareFootage > 0
+        ? {
+            label: "Energy intensity",
+            value: round1(kwh / profile.squareFootage),
+            unit: "kWh/ft²·yr",
+          }
+        : undefined,
     sources: dedupe(sources),
   };
 }
@@ -182,7 +185,12 @@ export function calcTransportation(
   let cost = 0; // school operating cost = bus fuel only (commute isn't a school cost)
   const sources: string[] = [];
 
-  if (t.busCount != null && t.busCount > 0) {
+  if (t.annualDieselGallons != null && t.annualDieselGallons > 0) {
+    const gal = t.annualDieselGallons;
+    co2e += gal * F.DIESEL_CO2E_KG_PER_GAL;
+    cost += gal * F.DIESEL_USD_PER_GAL;
+    sources.push(F.SOURCES.bus, F.SOURCES.diesel);
+  } else if (t.busCount != null && t.busCount > 0) {
     const miles = t.busCount * F.BUS_ANNUAL_MILES;
     const idle = t.busesIdle ? 1 + F.BUS_IDLE_PENALTY : 1;
     const fuel = t.busFuelType ?? "diesel";
