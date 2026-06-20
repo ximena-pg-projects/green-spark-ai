@@ -44,7 +44,7 @@ The AI does not decide what to spend money on or approve any capital project. It
 ## Tools Used
 
 - Next.js, React, Tailwind CSS, Recharts, Zod, TypeScript — free / open source.
-- Anthropic Claude API (`claude-sonnet-4-6`) for the detective layer — paid, low cost. The app runs without it via a deterministic offline fallback.
+- Anthropic Claude API via CometAPI  (`claude-sonnet-4-6`) for the detective layer — paid, low cost. The app runs without it via a deterministic offline fallback.
 - Vercel for hosting — free tier.
 - AI coding assistance: Claude Code was used to help build the project (disclosed per the rules). Per the brief, paid tools are not an advantage; the reasoning and design are ours.
 
