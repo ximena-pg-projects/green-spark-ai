@@ -8,7 +8,10 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   ArrowRight,
+  ArrowDown,
   ShieldCheck,
+  Warning,
+  Users,
   Gauge,
   SlidersHorizontal,
   Gift,
@@ -16,11 +19,10 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import demoSchool from "@/data/school.json";
-import { FLAGSHIP } from "@/lib/flagship";
 import { estimateFromProfile } from "@/lib/estimate";
 import { buildEvidencePacket } from "@/lib/benchmarks";
 import { SiteHeader, SiteFooter } from "@/components/brand";
-import { Reveal, CountUp, Parallax } from "@/components/motion";
+import { Reveal, CountUp, Parallax, MaskLine } from "@/components/motion";
 import { ShaderField } from "@/components/fx";
 import { CaseWalkthrough } from "@/components/CaseWalkthrough";
 import type { SchoolData, SchoolProfile } from "@/lib/schema";
@@ -179,14 +181,19 @@ export default function Home() {
               </motion.div>
 
               <div ref={heroCopy} className="py-16 lg:py-10">
-                <motion.h1
-                  {...fade(1)}
-                  className="max-w-[920px] font-display text-[clamp(4.5rem,8.4vw,9.2rem)] font-semibold leading-[0.82] tracking-[-0.065em]"
+                <h1 className="max-w-[920px] font-display text-[clamp(4.5rem,8.4vw,9.2rem)] font-semibold leading-[0.85] tracking-[-0.065em]">
+                  <MaskLine className="pb-[0.12em]" delay={0.15}>Our school,</MaskLine>
+                  <MaskLine className="pb-[0.12em]" delay={0.3}>clearly seen.</MaskLine>
+                </h1>
+                <motion.p
+                  initial={reduce ? false : { opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.5, ease: EASE }}
+                  className="mt-8 max-w-[56ch] text-lg leading-[1.5] text-forest/85 lg:text-xl"
                 >
-                  Our school,<br />clearly seen.
-                </motion.h1>
-                <motion.p {...fade(2)} className="mt-8 max-w-[55ch] text-lg leading-[1.5] lg:text-xl">
-                  Built for our Eco Club: a clear view of the school&rsquo;s footprint, the cost behind it, and the changes worth pushing for next.
+                  Built for our Eco Club: the numbers that show where to cut waste hide in
+                  bills we never see, so we surface them, put a cost on each, and point to
+                  the changes worth making first.
                 </motion.p>
               </div>
 
@@ -232,23 +239,6 @@ export default function Home() {
                 {school.profile.name}
               </div>
             </motion.div>
-          </div>
-        </section>
-
-        {/* ── PROBLEM STATEMENT (one sentence, no AI named) ────────────── */}
-        <section className="border-b border-forest/15 bg-mineral text-forest">
-          <div className="mx-auto w-full max-w-[1600px] px-5 py-16 sm:px-8 lg:px-12 lg:py-24">
-            <Reveal>
-              <span className="campaign-stamp">The problem / in one sentence</span>
-              <p className="mt-8 max-w-[40ch] font-display text-[clamp(1.9rem,3.4vw,3.2rem)] font-semibold leading-[1.08] tracking-[-0.03em]">
-                {FLAGSHIP.oneLiner}
-              </p>
-              <p className="mt-8 max-w-[60ch] text-lg leading-[1.55] text-forest/70">
-                No AI in that sentence, on purpose. Green Spark exists to close it: make the
-                footprint visible, price every part of it, and hand the club the two or three
-                moves worth fighting for.
-              </p>
-            </Reveal>
           </div>
         </section>
 
@@ -383,36 +373,90 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── RESPONSIBLE AI (failure mode → who's harmed → design choice) ── */}
-        <section id="responsible-ai" className="border-b border-forest/15 bg-mineral text-forest">
-          <div className="mx-auto w-full max-w-[1600px] px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
-            <Reveal>
-              <span className="campaign-stamp">Responsible AI / by design</span>
-              <h2 className="mt-8 max-w-[18ch] font-display text-[clamp(3rem,5.5vw,6.4rem)] font-semibold leading-[0.88] tracking-[-0.055em]">
-                If the AI is wrong, who gets hurt?
-              </h2>
-              <p className="mt-8 max-w-[60ch] text-lg leading-[1.55] text-forest/70">
-                We asked it plainly, because a school acting on a bad number is a real cost, not a
-                hypothetical. So the safeguard is built into how the tool reasons, not bolted on.
-              </p>
-            </Reveal>
-            <Parallax className="mt-14 grid gap-3 md:grid-cols-3" from={60} to={-60} fade>
-              <RAItem
-                index="01"
-                title="The failure mode"
-                body="Give confident, specific advice from thin data and send the club chasing the wrong fix."
-              />
-              <RAItem
-                index="02"
-                title="Who it harms"
-                body="A school with a tight facilities budget spends it on the wrong retrofit, and the club loses credibility with staff for next time."
-              />
-              <RAItem
-                index="03"
-                title="Our design choice"
-                body="A confidence gate ties how certain the analysis sounds to how much real data backs it, every estimate is labeled as an estimate, and no dollar moves without a human and a vendor quote."
-              />
-            </Parallax>
+        {/* ── RESPONSIBLE AI (failure → who it lands on → guardrail) ───── */}
+        <section id="responsible-ai" className="relative overflow-hidden border-b border-forest/15 bg-mineral text-forest">
+          <div className="graph-paper pointer-events-none absolute inset-0" aria-hidden />
+          <div className="relative mx-auto w-full max-w-[1600px] px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
+            <div className="grid gap-8 lg:grid-cols-12 lg:items-end">
+              <div className="lg:col-span-8">
+                <Reveal>
+                  <span className="campaign-stamp">Responsible AI / by design</span>
+                </Reveal>
+                <h2 className="mt-8 font-display text-[clamp(3rem,5.8vw,6.8rem)] font-semibold leading-[0.88] tracking-[-0.05em]">
+                  <MaskLine trigger="inView" className="pb-[0.1em]" delay={0.04}>
+                    If the AI is wrong,
+                  </MaskLine>
+                  <MaskLine trigger="inView" className="pb-[0.1em]" delay={0.16}>
+                    who gets hurt?
+                  </MaskLine>
+                </h2>
+              </div>
+              <Reveal delay={0.2} className="lg:col-span-4 lg:pb-3">
+                <p className="text-lg leading-[1.55] text-forest/70">
+                  We answered it plainly. A school acting on a bad number is a real cost, so the
+                  safeguard is built into how the tool reasons, not bolted on after.
+                </p>
+              </Reveal>
+            </div>
+
+            {/* the chain assembles from the left, then the guardrail lands */}
+            <div className="mt-14 grid gap-4 lg:grid-cols-12 lg:gap-6">
+              <div className="lg:col-span-7">
+                <motion.div
+                  initial={reduce ? false : { opacity: 0, x: -28 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, amount: 0.4 }}
+                  transition={{ duration: 0.6, ease: EASE }}
+                >
+                  <ChainStep
+                    icon={Warning}
+                    tone="rose"
+                    tag="The failure mode"
+                    body="The detective gives confident, specific advice from thin data and sends the club chasing the wrong fix."
+                  />
+                </motion.div>
+                <ChainLink label="which lands on" />
+                <motion.div
+                  initial={reduce ? false : { opacity: 0, x: -28 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, amount: 0.4 }}
+                  transition={{ duration: 0.6, delay: 0.12, ease: EASE }}
+                >
+                  <ChainStep
+                    icon={Users}
+                    tone="amber"
+                    tag="Who it lands on"
+                    body="A school with a tight facilities budget spends it on the wrong retrofit, and the Eco Club loses standing with staff for next time."
+                  />
+                </motion.div>
+              </div>
+
+              <motion.div
+                initial={reduce ? false : { opacity: 0, x: 28, scale: 0.97 }}
+                whileInView={{ opacity: 1, x: 0, scale: 1 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.75, delay: 0.1, ease: EASE }}
+                className="lg:col-span-5"
+              >
+                <div className="relative flex h-full flex-col overflow-hidden rounded-[1.5rem] bg-forest p-7 text-mineral shadow-[0_50px_130px_-28px_oklch(0.66_0.16_158_/_0.55)] sm:p-9">
+                  <div className="campaign-grid pointer-events-none absolute inset-0 z-0 opacity-40" aria-hidden />
+                  <div className="relative z-10 flex items-center justify-between">
+                    <span className="campaign-stamp border-botanical-bright text-botanical-bright">
+                      The guardrail
+                    </span>
+                    <ShieldCheck weight="duotone" className="h-7 w-7 text-botanical-bright" />
+                  </div>
+                  <p className="relative z-10 mt-8 font-display text-2xl font-semibold leading-[1.15] tracking-[-0.02em]">
+                    So certainty is tied to the evidence, and no dollar moves on the AI alone.
+                  </p>
+                  <ul className="relative z-10 mt-8 space-y-3.5 border-t border-mineral/15 pt-6">
+                    <Guard k="Confidence gate" v="Thin data lowers how sure it sounds." />
+                    <Guard k="Labeled estimates" v="Every estimate is marked, never shown as measured." />
+                    <Guard k="Human + quote" v="A person confirms a vendor quote before any spend." />
+                  </ul>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </section>
       </main>
@@ -453,30 +497,66 @@ function ActionSystem({
   );
 }
 
-function RAItem({
-  index,
-  title,
+function ChainStep({
+  icon: Ico,
+  tag,
   body,
+  tone,
 }: {
-  index: string;
-  title: string;
+  icon: Icon;
+  tag: string;
   body: string;
+  tone: "rose" | "amber";
 }) {
   return (
-    <div className="flex h-full min-h-[230px] flex-col justify-between rounded-[1.25rem] bg-forest/[0.055] p-7">
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-forest/45">
-          {index}
+    <div className="rounded-[1.25rem] bg-forest/[0.05] p-6 sm:p-7">
+      <div className="flex items-center gap-3">
+        <span
+          className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${
+            tone === "rose" ? "bg-rose/15" : "bg-amber/20"
+          }`}
+        >
+          <Ico
+            weight="duotone"
+            className={`h-5 w-5 ${tone === "rose" ? "text-rose" : "text-amber"}`}
+          />
         </span>
-        <ShieldCheck weight="duotone" className="h-6 w-6 text-forest" />
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-forest/55">
+          {tag}
+        </span>
       </div>
-      <div className="mt-10">
-        <h3 className="font-display text-2xl font-semibold leading-[1.05] tracking-[-0.03em]">
-          {title}
-        </h3>
-        <p className="mt-3 text-[15px] leading-[1.5] text-forest/65">{body}</p>
-      </div>
+      <p className="mt-4 text-lg leading-[1.5] text-forest/80">{body}</p>
     </div>
+  );
+}
+
+function ChainLink({ label }: { label: string }) {
+  const reduce = useReducedMotion();
+  return (
+    <div className="flex items-center gap-3 py-3 pl-7">
+      <motion.span
+        className="text-forest/40"
+        animate={reduce ? undefined : { y: [0, 5, 0] }}
+        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <ArrowDown weight="bold" className="h-5 w-5" />
+      </motion.span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-forest/45">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function Guard({ k, v }: { k: string; v: string }) {
+  return (
+    <li className="flex items-baseline gap-3">
+      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-botanical-bright" />
+      <span className="text-[15px] leading-snug">
+        <span className="font-semibold text-mineral">{k}.</span>{" "}
+        <span className="text-mineral/65">{v}</span>
+      </span>
+    </li>
   );
 }
 

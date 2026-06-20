@@ -167,3 +167,44 @@ export function CountUp({
     </span>
   );
 }
+
+/** A single headline line that rises in from behind a mask. Use one per visual
+ *  line for a cinematic reveal. trigger "load" plays on mount (heroes);
+ *  "inView" plays when scrolled into view. Honors reduced motion. */
+export function MaskLine({
+  children,
+  delay = 0,
+  className,
+  trigger = "load",
+  duration = 0.9,
+}: {
+  children: ReactNode;
+  delay?: number;
+  className?: string;
+  trigger?: "load" | "inView";
+  duration?: number;
+}) {
+  const reduce = useReducedMotion();
+  const inner = {
+    className: "block will-change-transform",
+    initial: reduce ? false : { y: "115%" },
+    transition: { duration, delay, ease: EASE },
+  };
+  return (
+    <span className={`block overflow-hidden ${className ?? ""}`}>
+      {trigger === "load" ? (
+        <motion.span {...inner} animate={{ y: "0%" }}>
+          {children}
+        </motion.span>
+      ) : (
+        <motion.span
+          {...inner}
+          whileInView={{ y: "0%" }}
+          viewport={{ once: true, amount: 0.4 }}
+        >
+          {children}
+        </motion.span>
+      )}
+    </span>
+  );
+}

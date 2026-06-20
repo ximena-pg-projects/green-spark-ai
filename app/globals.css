@@ -118,6 +118,15 @@
   background-size: 48px 48px;
 }
 
+/* Dark hairline grid for LIGHT (mineral) sections — the case-file / graph-paper
+   counterpart to campaign-grid, whose near-white lines vanish on mineral. */
+@utility graph-paper {
+  background-image:
+    linear-gradient(oklch(0.18 0.036 158 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.18 0.036 158 / 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
 @utility kicker {
   font-family: var(--font-mono);
   font-size: 0.68rem;
