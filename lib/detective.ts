@@ -1,43 +1,32 @@
 // lib/detective.ts
-// Layer 3 — the LLM detective. Takes the computed evidence packet, asks Claude to
-// rank impacts and choose ROI fixes, and returns strict structured JSON.
+// Layer 3 — the LLM detective, running on Google Gemini.
 //
-// We force structured output via a single `submit_analysis` tool (tool_choice),
-// which is reliable across SDK versions, then validate the result with Zod so a
-// malformed response fails loudly instead of reaching the UI.
-// ── Why this file uses the OpenAI SDK, not @anthropic-ai/sdk ─────────────────
-// We're calling Claude through CometAPI (a third-party proxy), not Anthropic
-// directly. CometAPI speaks the OpenAI request/response schema at
-// POST https://api.cometapi.com/v1/chat/completions — NOT Anthropic's native
-// /v1/messages schema. Pointing the Anthropic SDK's `baseURL` at CometAPI does
-// not work: the SDK serializes tool definitions as Anthropic's `input_schema`
-// blocks and expects `content: [{type: "tool_use", ...}]` back, while CometAPI
-// expects OpenAI-style `tools: [{type: "function", function: {...}}]` and
-// returns `choices[0].message.tool_calls`. So this uses the `openai` package
-// configured with CometAPI's baseURL, and a Claude model string in `model`.
+// Takes the computed evidence packet (Layers 1-2), asks Gemini to rank impacts
+// and choose ROI fixes, and returns strict structured JSON.
 //
-// If the team later gets a real Anthropic API key and wants to call Anthropic
-// directly instead of through CometAPI, swap this file back to
-// @anthropic-ai/sdk with its native tool_choice/input_schema shape (see git
-// history / the original version of this file for that path) — don't try to
-// run both schemas through one client.
+// ── Why this calls Gemini's REST API directly (no SDK) ───────────────────────
+// We force structured output with Gemini's native JSON mode:
+//   generationConfig.responseMimeType = "application/json"
+//   generationConfig.responseSchema  = <the DetectiveOutput shape>
+// This is more reliable than tool/function-calling for a fixed output contract —
+// the model is constrained to emit JSON matching the schema, which we then
+// re-validate with Zod so a malformed response fails loudly instead of reaching
+// the UI. A plain fetch keeps the dependency surface tiny (no provider SDK).
 //
-// Structured output is still forced via a single tool the model must call,
-// then validated with Zod so a malformed response fails loudly instead of
-// reaching the UI.
+// History: this file previously called Claude (via the Anthropic SDK, then via
+// CometAPI's OpenAI-compatible proxy). It now uses Gemini. The required env var
+// is GEMINI_API_KEY; the model defaults to gemini-2.5-flash and can be overridden
+// with GEMINI_MODEL. See git history for the earlier Claude/CometAPI versions.
 
-import OpenAI from "openai";
 import { z } from "zod";
 import type { DetectiveOutput, EvidencePacket } from "./schema";
 import { DETECTIVE_SYSTEM } from "./detectivePrompt";
 import { interventionsFor } from "./interventions";
 import { rebatesForInterventions } from "./rebates";
 
-// CometAPI has documented passing Claude model strings directly (e.g.
-// "claude-sonnet-4-6") through their OpenAI-compatible endpoint. Confirm the
-// exact current model string against the CometAPI model list before relying
-// on this in production — provider-side model names can change.
-const MODEL = process.env.COMET_MODEL ?? "claude-sonnet-4-6";
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+const ENDPOINT = (model: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
 // ── Runtime validation of the model's structured output ──────────────────────
 const RecommendationSchema = z.object({
@@ -61,97 +50,101 @@ const DetectiveOutputSchema = z.object({
   overall_verdict: z.string(),
 });
 
-// ── The tool the model must call, in OpenAI's function-calling shape ─────────
-// Same fields as before; reshaped from Anthropic's flat `input_schema` into
-// OpenAI's `{type: "function", function: {name, description, parameters}}`.
-const SUBMIT_TOOL: OpenAI.Chat.Completions.ChatCompletionTool = {
-  type: "function",
-  function: {
-    name: "submit_analysis",
-    description:
-      "Return the Environmental AI Detective's structured analysis of the school.",
-    parameters: {
-      type: "object",
-      properties: {
-        confidence_level: { type: "string", enum: ["Low", "Medium", "High"] },
-        confidence_explanation: { type: "string" },
-        top_impacts: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              category: {
-                type: "string",
-                enum: ["Energy", "Water", "Waste", "Transportation", "Food"],
-              },
-              rank: { type: "number" },
-              impact_score: { type: "number" },
-              detective_insight: { type: "string" },
-              recommendations: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    action: { type: "string" },
-                    estimated_annual_savings: { type: "string" },
-                    payback_period: { type: "string" },
-                    impact_reduction: { type: "string" },
-                  },
-                  required: [
-                    "action",
-                    "estimated_annual_savings",
-                    "payback_period",
-                    "impact_reduction",
-                  ],
-                },
-              },
-              quick_win: { type: "string" },
-            },
-            required: [
-              "category",
-              "rank",
-              "impact_score",
-              "detective_insight",
-              "recommendations",
-              "quick_win",
-            ],
+// ── Gemini responseSchema — same fields as the Zod schema above, expressed in
+//    Gemini's OpenAPI-subset dialect (uppercase types, enum on strings). ──────
+const RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    confidence_level: { type: "STRING", enum: ["Low", "Medium", "High"] },
+    confidence_explanation: { type: "STRING" },
+    top_impacts: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          category: {
+            type: "STRING",
+            enum: ["Energy", "Water", "Waste", "Transportation", "Food"],
           },
+          rank: { type: "INTEGER" },
+          impact_score: { type: "NUMBER" },
+          detective_insight: { type: "STRING" },
+          recommendations: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                action: { type: "STRING" },
+                estimated_annual_savings: { type: "STRING" },
+                payback_period: { type: "STRING" },
+                impact_reduction: { type: "STRING" },
+              },
+              required: [
+                "action",
+                "estimated_annual_savings",
+                "payback_period",
+                "impact_reduction",
+              ],
+              propertyOrdering: [
+                "action",
+                "estimated_annual_savings",
+                "payback_period",
+                "impact_reduction",
+              ],
+            },
+          },
+          quick_win: { type: "STRING" },
         },
-        overall_verdict: { type: "string" },
+        required: [
+          "category",
+          "rank",
+          "impact_score",
+          "detective_insight",
+          "recommendations",
+          "quick_win",
+        ],
+        propertyOrdering: [
+          "category",
+          "rank",
+          "impact_score",
+          "detective_insight",
+          "recommendations",
+          "quick_win",
+        ],
       },
-      required: [
-        "confidence_level",
-        "confidence_explanation",
-        "top_impacts",
-        "overall_verdict",
-      ],
     },
+    overall_verdict: { type: "STRING" },
   },
-};
- 
-function getClient(): OpenAI {
-  const apiKey = process.env.COMET_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "COMET_API_KEY is not set. Add it to .env.local (server-side only, " +
-        "never commit it) and restart the dev server.",
-    );
-  }
-  return new OpenAI({
-    apiKey,
-    baseURL: "https://api.cometapi.com/v1",
-  });
-}
- 
+  required: [
+    "confidence_level",
+    "confidence_explanation",
+    "top_impacts",
+    "overall_verdict",
+  ],
+  propertyOrdering: [
+    "confidence_level",
+    "confidence_explanation",
+    "top_impacts",
+    "overall_verdict",
+  ],
+} as const;
+
 export async function runDetective(
   evidence: EvidencePacket,
 ): Promise<DetectiveOutput> {
-  const client = getClient();
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "GEMINI_API_KEY is not set. Add it to .env.local (server-side only, " +
+        "never commit it) and restart the dev server.",
+    );
+  }
+
   const interventions = interventionsFor(
     evidence.categories.map((c) => c.category),
   );
   const rebates = rebatesForInterventions(interventions.map((i) => i.id));
- 
+
   const packet = {
     school: evidence.profile,
     confidence_level: evidence.confidenceLevel,
@@ -172,56 +165,77 @@ export async function runDetective(
     intervention_options: interventions,
     local_rebates: rebates,
   };
- 
-  let response: OpenAI.Chat.Completions.ChatCompletion;
-  try {
-    response = await client.chat.completions.create({
-      model: MODEL,
-      max_tokens: 4096,
-      tools: [SUBMIT_TOOL],
-      tool_choice: {
-        type: "function",
-        function: { name: "submit_analysis" },
+
+  const body = {
+    systemInstruction: { parts: [{ text: DETECTIVE_SYSTEM }] },
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: `Here is the school's computed EVIDENCE PACKET. Solve the case and return your structured analysis as JSON.\n\n${JSON.stringify(packet, null, 2)}`,
+          },
+        ],
       },
-      messages: [
-        { role: "system", content: DETECTIVE_SYSTEM },
-        {
-          role: "user",
-          content: `Here is the school's computed EVIDENCE PACKET. Solve the case and call submit_analysis with your analysis.\n\n${JSON.stringify(packet, null, 2)}`,
-        },
-      ],
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: RESPONSE_SCHEMA,
+      // Disable "thinking" — the task is rule-application over a packet, so this
+      // keeps the call fast and cheap (important on the free tier).
+      thinkingConfig: { thinkingBudget: 0 },
+      temperature: 0.4,
+      maxOutputTokens: 4096,
+    },
+  };
+
+  let res: Response;
+  try {
+    res = await fetch(ENDPOINT(MODEL), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify(body),
     });
   } catch (err) {
-    // Surface CometAPI/network failures distinctly from "model responded
-    // with something we couldn't parse" below, since the fix differs:
-    // this branch means check COMET_API_KEY / COMET_MODEL / network, the
-    // branch below means the model's tool call was malformed.
+    // Network/transport failure — distinct from "the model replied with
+    // something we couldn't parse" below, since the fix differs.
     throw new Error(
-      `CometAPI request failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-  }
- 
-  const toolCall = response.choices[0]?.message?.tool_calls?.find(
-    (
-      t,
-    ): t is OpenAI.Chat.Completions.ChatCompletionMessageToolCall =>
-      t.type === "function" && t.function.name === "submit_analysis",
-  );
-  if (!toolCall || toolCall.type !== "function") {
-    throw new Error(
-      "The detective did not return a structured analysis (no submit_analysis tool call in response).",
+      `Gemini request failed: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
-  let parsedArgs: unknown;
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Gemini API error ${res.status}: ${detail.slice(0, 500)}`);
+  }
+
+  const data = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+    promptFeedback?: { blockReason?: string };
+  };
+
+  const text =
+    data.candidates?.[0]?.content?.parts
+      ?.map((p) => p.text ?? "")
+      .join("") ?? "";
+
+  if (!text) {
+    const blocked = data.promptFeedback?.blockReason;
+    throw new Error(
+      blocked
+        ? `Gemini returned no content (blocked: ${blocked}).`
+        : "Gemini returned no content.",
+    );
+  }
+
+  let parsed: unknown;
   try {
-    parsedArgs = JSON.parse(toolCall.function.arguments);
+    parsed = JSON.parse(text);
   } catch {
     throw new Error(
-      "Detective's tool call arguments were not valid JSON. Raw response: " +
-        toolCall.function.arguments.slice(0, 500),
+      "Gemini response was not valid JSON. Raw response: " + text.slice(0, 500),
     );
   }
 
-  return DetectiveOutputSchema.parse(parsedArgs) as DetectiveOutput;
+  return DetectiveOutputSchema.parse(parsed) as DetectiveOutput;
 }

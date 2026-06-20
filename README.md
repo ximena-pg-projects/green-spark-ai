@@ -1,12 +1,14 @@
 # Green Spark AI
 
-An Environmental AI Detective for schools. It turns a school's everyday numbers into a short, costed action plan: where the biggest impacts are, what they cost, and what to do about them this week.
+An Environmental AI Detective built for a school's Eco Club. It turns the school's everyday numbers into a short, costed action plan: where the biggest impacts are, what they cost, and what to do about them this week.
 
 Built for the USAII Global AI Hackathon 2026, Challenge Brief 2 (Make Climate Action Local and Real), High School track.
 
+**Our user, in one sentence (no AI named):** the Hanover High Eco Club wants to cut the school's waste and emissions, but the numbers that would tell them where to start are scattered across utility bills nobody in the club ever sees.
+
 ## The problem we're trying to fix
 
-A lot of people care about the environment but never get to act on it at the places they actually spend their days. A school is a good example. It wants to cut waste and save money, but the people who could push for that, a student in the eco club, a teacher, someone in the front office, almost never have the building's energy, water, waste, and transportation numbers in front of them. Even when they do, it's a wall of figures with no sense of which one matters most or what fixing it would cost. Good intentions stall right there, and "we should do something" never becomes "we did."
+The Eco Club is the group that actually wants to act, and it's the group with the least access to the data. A school wants to cut waste and save money, but the students who would push for that almost never have the building's energy, water, waste, transportation, and food numbers in front of them. Even when they do, it's a wall of figures with no sense of which one matters most or what fixing it would cost. Good intentions stall right there, and "we should do something" never becomes "we did."
 
 Green Spark AI is built to close that gap: make a school's footprint visible, point at the few things worth acting on, and put a dollar figure and a payback time on each one so it's easy to make the case to whoever holds the budget.
 
@@ -15,8 +17,8 @@ Green Spark AI is built to close that gap: make a school's footprint visible, po
 The core is a reasoning pipeline rather than a chatbot sitting on top of a bar chart. There are three layers:
 
 1. **Calc engine (Layer 1).** Pure TypeScript converts inputs into annual CO2 and cost using published EPA, DOE, and EIA factors, each one tied to a source. The AI never makes up the headline numbers.
-2. **Pattern detection (Layer 2).** Each category is compared to a benchmark and to a set of peer schools, anything that stands out is flagged, and the data is scored for how complete it is.
-3. **The detective (Layer 3, Claude).** It reads that computed evidence, ranks the biggest impacts, and selects fixes from a small library of real interventions so the savings and payback are grounded, not guessed.
+2. **Pattern detection (Layer 2).** Each category is compared to a benchmark and to a set of peer schools, anything that stands out is flagged (an early warning when a category drifts above peers), and the data is scored for how complete it is. The what-if engine then forecasts the 12-month trajectory of any change.
+3. **The detective (Layer 3, Gemini).** It reads that computed evidence, ranks the biggest impacts, and selects fixes from a small library of real interventions so the savings and payback are grounded, not guessed. Output is forced into a strict JSON schema (Gemini's native structured-output mode) and re-validated before it reaches the UI.
 
 A few choices we made on purpose:
 
@@ -44,11 +46,11 @@ Built and verified (compiles, lints, smoke-tested):
 - [x] Dashboard real-number entry: type a real usage figure (from the bill / front office) and that category graduates from estimate to measured, climbing the confidence meter Low → Medium → High (`lib/usage.ts`, `components/UsageEntry.tsx`)
 - [x] Local + federal rebates matched to each fix (`data/rebates.json`, `lib/rebates.ts`, `components/RebateBadge.tsx`)
 
+- [x] Live Gemini detective wired to the dashboard behind `NEXT_PUBLIC_ENABLE_AI`, firing only on load and on Re-run to respect free-tier limits (`lib/detective.ts`)
+
 Next up:
 
-- [ ] Add `ANTHROPIC_API_KEY` to `.env.local` so the dashboard shows live Claude analysis (without it, the offline fallback runs)
-- [x] Use Hanover High School public data as the flagship profile (`data/school.json` + `lib/flagship.ts`)
-- [ ] Deploy to Vercel and set the key in the project env
+- [ ] Deploy to Vercel and set `GEMINI_API_KEY` + `NEXT_PUBLIC_ENABLE_AI=1` in the project env
 - [ ] Record the 3–5 minute pitch video
 
 Out of scope: utility-bill photo upload, dropped for privacy (uploading a real bill is exactly the kind of private data the brief warns against).
@@ -67,10 +69,11 @@ npx tsx scripts/smoke-calc.ts     # prints the footprint (CO2 + cost per categor
 npx tsx scripts/smoke-packet.ts   # prints anomalies, peer percentiles, confidence
 ```
 
-The detective itself calls Claude and needs an Anthropic API key, which is deferred for now. When you're ready:
+The detective calls Google Gemini and needs a free Gemini API key:
 
 ```bash
-cp .env.local.example .env.local  # add ANTHROPIC_API_KEY (stays server-side only)
+cp .env.local.example .env.local  # add GEMINI_API_KEY (stays server-side only)
+                                  # and keep NEXT_PUBLIC_ENABLE_AI=1
 ```
 
 Then POST a school to the endpoint:
@@ -99,7 +102,7 @@ lib/
   interventions.ts       ROI library the detective chooses fixes from
   rebates.ts             local/federal incentives matched to fixes
   detectivePrompt.ts     the detective's system prompt
-  detective.ts           Layer 3: the Claude call (structured output)
+  detective.ts           Layer 3: the Gemini call (structured JSON output)
   localDetective.ts      deterministic offline detective (demo-safe fallback)
   simulate.ts            what-if engine (pure; powers the simulator)
 components/              ConfidenceMeter, ImpactCard, PeerGauge, RebateBadge,
@@ -114,10 +117,13 @@ scripts/                 gen-peers + smoke tests (calc, packet, simulate,
 
 ## Responsible AI
 
-- **Risk:** the detective could give confident, specific advice from sparse data and send a school down the wrong path.
-- **Mitigation:** the confidence gate lowers how certain it sounds when data is thin and names what is uncertain, and every figure is labeled with its source.
-- **Human in the loop:** the AI estimates and recommends, it does not decide what to spend. The numbers are estimates to confirm with a real quote, and a person approves any purchase.
+Stated the way the judges ask for it — failure mode, who is harmed, the design choice:
+
+- **The failure mode:** the detective could give confident, specific advice from thin data and send the club chasing the wrong fix.
+- **Who it harms:** a school with a tight facilities budget spends it on the wrong retrofit, and the Eco Club loses credibility with the staff who hold the budget for next time.
+- **The design choice (the guardrail):** a confidence gate ties how certain the analysis sounds to how much real data backs it; every estimated figure is labeled as an estimate, not a measurement; and the detective never recomputes or invents a headline number — it reasons only over the cited calc-engine output.
+- **Human in the loop:** the AI estimates and recommends, it does not decide what to spend. Every dollar figure is an estimate to confirm with a vendor quote, and a person approves any purchase.
 
 ## Data note
 
-The demo school is synthetic and clearly labeled. A real school can use real public profile data (enrollment, size, location) with consumption estimated from published benchmark ranges, or real figures where a city publishes them. No private data is required for the tool to work.
+The flagship is Hanover High School, built from public data and clearly labeled. Building square footage is not public (energy-intensity benchmarking is marked audit-needed), and cafeteria food waste is not separately metered, so it is estimated from EPA WARM benchmarks for a school this size and labeled as an estimate. Any other school can use real public profile data (enrollment, size, location) with consumption estimated from published benchmark ranges, or real figures where a city publishes them. No private student data is required for the tool to work.

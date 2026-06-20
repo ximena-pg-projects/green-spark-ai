@@ -62,8 +62,12 @@ export default function AnalyzePage() {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("greenspark.school");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (raw) setBaseSchool(JSON.parse(raw) as SchoolData);
+      if (raw) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setBaseSchool(JSON.parse(raw) as SchoolData);
+        // Re-fire the live analysis for the just-loaded school.
+        setRunId((n) => n + 1);
+      }
     } catch {
       /* ignore malformed storage */
     }
@@ -90,24 +94,29 @@ export default function AnalyzePage() {
     [localEvidence],
   );
 
-  // The live Claude call is gated behind a public flag so the dashboard runs on
-  // the deterministic local detective until the serverless backend (api/analyze
-  // + its provider SDK + key) is wired up. Flip NEXT_PUBLIC_ENABLE_AI=1 in
-  // .env.local to light up the live path once that lands. Until then the UI
-  // renders fully from runLocalDetective and shows the "Offline estimate" pill.
+  // The live Gemini call is gated behind a public flag. With NEXT_PUBLIC_ENABLE_AI=1
+  // the dashboard calls /api/analyze (Layer 3, Gemini) on load and on Re-run;
+  // without it, the UI renders fully from the deterministic runLocalDetective and
+  // shows the "Offline estimate" pill. Either way the demo never blanks out.
   const AI_ENABLED = process.env.NEXT_PUBLIC_ENABLE_AI === "1";
   const [data, setData] = useState<AnalyzeResponse>(localResponse);
-  const [source, setSource] = useState<Source>(AI_ENABLED ? "loading" : "fallback");
+  const [source, setSource] = useState<Source>("fallback");
 
+  // Keep the dashboard reactive and FREE. Every data-source toggle, real-number
+  // entry, and what-if recompute renders instantly from the local detective.
+  // Reverting here also clears any stale live result, so what's on screen always
+  // matches the current inputs until the user explicitly re-runs the AI.
   useEffect(() => {
-    if (!AI_ENABLED) {
-      // Keep the dashboard in sync with the locally-computed analysis as the
-      // user toggles data source, enters real usage, or re-runs.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setData(localResponse);
-      setSource("fallback");
-      return;
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setData(localResponse);
+    setSource("fallback");
+  }, [localResponse]);
+
+  // Live Gemini analysis fires ONLY on first load and on an explicit "Re-run"
+  // (runId), never on every keystroke — this respects the free-tier quota. The
+  // effect re-runs when runId changes, capturing the current effectiveSchool.
+  useEffect(() => {
+    if (!AI_ENABLED) return;
     let cancelled = false;
     const run = async () => {
       setSource("loading");
@@ -124,17 +133,17 @@ export default function AnalyzePage() {
           setSource("ai");
         }
       } catch {
-        if (!cancelled) {
-          setData(localResponse);
-          setSource("fallback");
-        }
+        if (!cancelled) setSource("fallback");
       }
     };
     void run();
     return () => {
       cancelled = true;
     };
-  }, [AI_ENABLED, effectiveSchool, localResponse, runId]);
+    // effectiveSchool is intentionally omitted (see comment above); its current
+    // value is captured via closure each time runId changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [AI_ENABLED, runId]);
 
   const { evidence, detective } = data;
   const needsBuildingSize =
@@ -208,7 +217,7 @@ export default function AnalyzePage() {
           <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2.5">
-                <span className="kicker text-signal">Our school · environmental view</span>
+                <span className="kicker text-signal">Eco Club · environmental view</span>
                 <SourcePill source={source} />
               </div>
               <h1 className="mt-6 font-display text-[clamp(3.25rem,5vw,5.8rem)] font-semibold leading-[0.9] tracking-[-0.055em]">
@@ -234,7 +243,7 @@ export default function AnalyzePage() {
                   weight="bold"
                   className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180"
                 />
-                Re-run
+                {AI_ENABLED ? "Re-run AI" : "Re-run"}
               </button>
               <Segmented
                 value={mode}
@@ -515,13 +524,13 @@ function SourcePill({ source }: { source: Source }) {
     return (
       <span className="inline-flex items-center gap-1.5 border border-botanical px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-botanical-bright">
         <Sparkle weight="fill" className="h-3 w-3" />
-        Claude live
+        Gemini live
       </span>
     );
   return (
     <span
       className="inline-flex items-center gap-1.5 border border-line-strong px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted"
-      title="The Claude API key is not set or the call failed, so this is the deterministic offline estimate."
+      title="Deterministic offline estimate. Click Re-run to get the live Gemini analysis."
     >
       <PlugsConnected weight="bold" className="h-3 w-3" />
       Offline estimate

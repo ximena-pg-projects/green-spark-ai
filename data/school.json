@@ -42,7 +42,9 @@
   "food": {
     "providesLunch": true,
     "hasMeatFreeOptions": false,
+    "plateWasteLbsPerDay": 81,
     "pctLocalSourcing": 12,
     "singleUsePlastics": "high"
-  }
+  },
+  "estimatedCategories": ["food"]
 }

@@ -42,7 +42,7 @@ export function SiteFooter() {
           <Link href="/analyze" className="inline-flex items-center gap-2 border-b border-forest pb-2 font-bold">
             Explore our school <ArrowUpRight className="h-4 w-4" weight="bold" />
           </Link>
-          <p>USAII Global AI Hackathon 2026<br />Our school / environmental view</p>
+          <p>USAII Global AI Hackathon 2026<br />For the Eco Club / environmental view</p>
         </Parallax>
       </div>
     </footer>

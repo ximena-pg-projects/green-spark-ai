@@ -1,12 +1,11 @@
 // app/api/analyze/route.ts
 // Serverless endpoint: SchoolData -> evidence packet (Layers 1-2) -> detective
-// (Layer 3, Claude via CometAPI) -> AnalyzeResponse. COMET_API_KEY stays
-// server-side and is never shipped to the browser.
+// (Layer 3, Gemini) -> AnalyzeResponse. GEMINI_API_KEY stays server-side and is
+// never shipped to the browser.
 //
-// NOTE: this previously checked ANTHROPIC_API_KEY and called Claude directly
-// via @anthropic-ai/sdk. The detective now calls Claude through CometAPI (an
-// OpenAI-schema proxy) instead, so the required env var is COMET_API_KEY. See
-// lib/detective.ts for why the request/response shapes changed along with it.
+// NOTE: earlier versions called Claude (Anthropic SDK, then CometAPI). The
+// detective now calls Google Gemini via its REST API, so the required env var is
+// GEMINI_API_KEY. See lib/detective.ts for the request/response shape.
 import { NextResponse } from "next/server";
 import { buildEvidencePacket } from "@/lib/benchmarks";
 import { runDetective } from "@/lib/detective";
@@ -14,11 +13,11 @@ import type { AnalyzeResponse, SchoolData } from "@/lib/schema";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 export async function POST(req: Request) {
-  if (!process.env.COMET_API_KEY) {
+  if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json(
       {
         error:
-          "COMET_API_KEY is not set. Add it to .env.local (e.g. COMET_API_KEY=sk-...) and restart the dev server.",
+          "GEMINI_API_KEY is not set. Add it to .env.local and restart the dev server.",
       },
       { status: 500 },
     );

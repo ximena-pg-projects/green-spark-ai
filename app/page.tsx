@@ -16,6 +16,7 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import demoSchool from "@/data/school.json";
+import { FLAGSHIP } from "@/lib/flagship";
 import { estimateFromProfile } from "@/lib/estimate";
 import { buildEvidencePacket } from "@/lib/benchmarks";
 import { SiteHeader, SiteFooter } from "@/components/brand";
@@ -173,7 +174,7 @@ export default function Home() {
           <div className="mx-auto grid min-h-[calc(100dvh-72px)] w-full max-w-[1600px] grid-cols-1 lg:grid-cols-12">
             <div className="relative z-10 flex flex-col justify-between border-r border-forest px-5 py-8 sm:px-8 lg:col-span-7 lg:px-12 lg:py-12">
               <motion.div {...fade(0)} className="flex items-center justify-between gap-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em]">
-                <span>Our school / environmental view</span>
+                <span>Hanover High Eco Club / environmental view</span>
                 <span className="campaign-stamp">Live view · 001</span>
               </motion.div>
 
@@ -185,7 +186,7 @@ export default function Home() {
                   Our school,<br />clearly seen.
                 </motion.h1>
                 <motion.p {...fade(2)} className="mt-8 max-w-[55ch] text-lg leading-[1.5] lg:text-xl">
-                  A clear view of our footprint, the cost behind it, and the changes worth making next.
+                  Built for our Eco Club: a clear view of the school&rsquo;s footprint, the cost behind it, and the changes worth pushing for next.
                 </motion.p>
               </div>
 
@@ -234,6 +235,23 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── PROBLEM STATEMENT (one sentence, no AI named) ────────────── */}
+        <section className="border-b border-forest/15 bg-mineral text-forest">
+          <div className="mx-auto w-full max-w-[1600px] px-5 py-16 sm:px-8 lg:px-12 lg:py-24">
+            <Reveal>
+              <span className="campaign-stamp">The problem / in one sentence</span>
+              <p className="mt-8 max-w-[40ch] font-display text-[clamp(1.9rem,3.4vw,3.2rem)] font-semibold leading-[1.08] tracking-[-0.03em]">
+                {FLAGSHIP.oneLiner}
+              </p>
+              <p className="mt-8 max-w-[60ch] text-lg leading-[1.55] text-forest/70">
+                No AI in that sentence, on purpose. Green Spark exists to close it: make the
+                footprint visible, price every part of it, and hand the club the two or three
+                moves worth fighting for.
+              </p>
+            </Reveal>
+          </div>
+        </section>
+
         {/* ── REASONING WALKTHROUGH (pinned horizontal scroll) ─────────── */}
         <CaseWalkthrough />
 
@@ -273,8 +291,8 @@ export default function Home() {
               <ActionSystem
                 index="02"
                 icon={Gauge}
-                title="Peer benchmark"
-                body="Similar schools give every category a useful point of comparison."
+                title="Peer benchmark + early warning"
+                body="Similar schools set the baseline, so a category drifting above peers gets flagged before it turns into a costly problem."
               />
               <ActionSystem
                 index="03"
@@ -364,6 +382,39 @@ export default function Home() {
             </Reveal>
           </div>
         </section>
+
+        {/* ── RESPONSIBLE AI (failure mode → who's harmed → design choice) ── */}
+        <section id="responsible-ai" className="border-b border-forest/15 bg-mineral text-forest">
+          <div className="mx-auto w-full max-w-[1600px] px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
+            <Reveal>
+              <span className="campaign-stamp">Responsible AI / by design</span>
+              <h2 className="mt-8 max-w-[18ch] font-display text-[clamp(3rem,5.5vw,6.4rem)] font-semibold leading-[0.88] tracking-[-0.055em]">
+                If the AI is wrong, who gets hurt?
+              </h2>
+              <p className="mt-8 max-w-[60ch] text-lg leading-[1.55] text-forest/70">
+                We asked it plainly, because a school acting on a bad number is a real cost, not a
+                hypothetical. So the safeguard is built into how the tool reasons, not bolted on.
+              </p>
+            </Reveal>
+            <Parallax className="mt-14 grid gap-3 md:grid-cols-3" from={60} to={-60} fade>
+              <RAItem
+                index="01"
+                title="The failure mode"
+                body="Give confident, specific advice from thin data and send the club chasing the wrong fix."
+              />
+              <RAItem
+                index="02"
+                title="Who it harms"
+                body="A school with a tight facilities budget spends it on the wrong retrofit, and the club loses credibility with staff for next time."
+              />
+              <RAItem
+                index="03"
+                title="Our design choice"
+                body="A confidence gate ties how certain the analysis sounds to how much real data backs it, every estimate is labeled as an estimate, and no dollar moves without a human and a vendor quote."
+              />
+            </Parallax>
+          </div>
+        </section>
       </main>
 
       <SiteFooter />
@@ -402,6 +453,33 @@ function ActionSystem({
   );
 }
 
+function RAItem({
+  index,
+  title,
+  body,
+}: {
+  index: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="flex h-full min-h-[230px] flex-col justify-between rounded-[1.25rem] bg-forest/[0.055] p-7">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-forest/45">
+          {index}
+        </span>
+        <ShieldCheck weight="duotone" className="h-6 w-6 text-forest" />
+      </div>
+      <div className="mt-10">
+        <h3 className="font-display text-2xl font-semibold leading-[1.05] tracking-[-0.03em]">
+          {title}
+        </h3>
+        <p className="mt-3 text-[15px] leading-[1.5] text-forest/65">{body}</p>
+      </div>
+    </div>
+  );
+}
+
 function ActionSimulator({ annualCost, annualCo2 }: { annualCost: number; annualCo2: number }) {
   const router = useRouter();
   const reduce = useReducedMotion();
@@ -430,7 +508,7 @@ function ActionSimulator({ annualCost, annualCo2 }: { annualCost: number; annual
             Choose a move. See the result.
           </h3>
           <p className="mt-5 max-w-[48ch] text-base leading-[1.55] text-forest/70">
-            Select one scenario below. The yearly cost and carbon estimate update immediately, so the tradeoff is visible before we open the full analysis.
+            Pick a scenario and we forecast the year it leads to. Cost and carbon update instantly, so the tradeoff is clear before the club commits a dollar.
           </p>
           <div className="mt-8 grid gap-2">
             {scenarios.map((scenario) => {
