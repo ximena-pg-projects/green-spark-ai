@@ -1,55 +1,87 @@
+"use client";
+
 // components/PeerGauge.tsx
 // Peer percentile gauge: where this school sits among ~40 similar-size peers for
 // one category's intensity. Higher percentile = more intensive = more to gain.
-// This is Layer-2 pattern detection made legible, not just a number.
+// Layer-2 pattern detection made legible. Bar color encodes severity (worse is
+// rose); a small dot carries the category color; the tick marks the peer median.
+
+import { motion, useReducedMotion } from "motion/react";
 
 export function PeerGauge({
   label,
+  sublabel,
   percentile,
   value,
   unit,
   median,
+  accent,
 }: {
   label: string;
+  sublabel?: string;
   percentile: number;
   value: number;
   unit: string;
   median?: number;
+  accent?: string;
 }) {
-  // Higher intensity is worse, so green at the low end, rose at the high end.
+  const reduce = useReducedMotion();
   const tone =
     percentile >= 70
-      ? { bar: "bg-rose-500", text: "text-rose-700" }
+      ? { bar: "var(--color-rose)", text: "text-rose" }
       : percentile >= 45
-        ? { bar: "bg-amber-500", text: "text-amber-700" }
-        : { bar: "bg-emerald-500", text: "text-emerald-700" };
+        ? { bar: "var(--color-amber)", text: "text-amber" }
+        : { bar: "var(--color-signal)", text: "text-signal" };
 
   return (
-    <div className="rounded-2xl border border-slate-200 p-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-slate-700">{label}</p>
-        <span className={`text-sm font-semibold ${tone.text}`}>
-          {percentile}th percentile
+    <div className="rounded-xl bg-ink-2 p-5 shadow-[inset_0_1px_0_oklch(0.955_0.012_138_/_0.04)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          {accent && (
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ background: accent }}
+            />
+          )}
+          <div>
+            <p className="text-sm font-medium text-fg">{label}</p>
+            {sublabel && (
+              <p className="font-mono text-[10px] uppercase tracking-wide text-faint">
+                {sublabel}
+              </p>
+            )}
+          </div>
+        </div>
+        <span className={`shrink-0 font-mono text-sm font-semibold tabular-nums ${tone.text}`}>
+          {percentile}
+          <span className="text-[10px] text-faint">th</span>
         </span>
       </div>
-      <div className="relative mt-3 h-2 w-full rounded-full bg-slate-100">
-        <div
-          className={`absolute left-0 top-0 h-2 rounded-full ${tone.bar}`}
-          style={{ width: `${Math.max(2, Math.min(100, percentile))}%` }}
+
+      <div className="relative mt-3.5 h-2 w-full bg-panel-2">
+        <motion.div
+          className="absolute left-0 top-0 h-2"
+          style={{ background: tone.bar }}
+          initial={reduce ? false : { width: 0 }}
+          whileInView={{ width: `${Math.max(2, Math.min(100, percentile))}%` }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
         />
         <div
-          className="absolute -top-1 h-4 w-0.5 -translate-x-1/2 bg-slate-400"
+          className="absolute -top-1 h-4 w-px -translate-x-1/2 bg-line-strong"
           style={{ left: "50%" }}
           title="Peer median"
           aria-label="Peer median marker"
         />
       </div>
-      <p className="mt-2 text-xs text-slate-500">
+
+      <p className="mt-2.5 font-mono text-[11px] tabular-nums text-faint">
         {value.toLocaleString()} {unit}
         {median != null && (
           <>
             {" "}
-            · peer median {median.toLocaleString()} {unit}
+            <span className="text-muted">·</span> median{" "}
+            {median.toLocaleString()} {unit}
           </>
         )}
       </p>

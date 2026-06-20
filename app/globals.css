@@ -1,26 +1,210 @@
 @import "tailwindcss";
 
+/* GREEN SPARK AI / botanical evidence system */
+@theme {
+  --color-ink: oklch(0.18 0.036 158);
+  --color-ink-2: oklch(0.205 0.04 158);
+  --color-panel: oklch(0.23 0.042 158);
+  --color-panel-2: oklch(0.265 0.046 158);
+  --color-line: oklch(0.955 0.012 138 / 0.09);
+  --color-line-strong: oklch(0.955 0.012 138 / 0.18);
+
+  --color-fg: oklch(0.955 0.012 138);
+  --color-muted: oklch(0.76 0.024 145);
+  --color-faint: oklch(0.59 0.025 150);
+
+  --color-botanical: oklch(0.66 0.16 158);
+  --color-botanical-bright: oklch(0.79 0.18 151);
+  --color-forest: oklch(0.18 0.036 158);
+  --color-mineral: oklch(0.925 0.018 138);
+  --color-signal: oklch(0.66 0.16 158);
+  --color-signal-ink: oklch(0.17 0.04 158);
+
+  --color-amber: oklch(0.82 0.15 82);
+  --color-rose: oklch(0.67 0.2 32);
+  --color-energy: oklch(0.79 0.18 151);
+  --color-water: oklch(0.78 0.13 220);
+  --color-waste: oklch(0.82 0.15 82);
+  --color-transport: oklch(0.7 0.15 295);
+  --color-food: oklch(0.67 0.2 32);
+
+  --font-display: var(--font-primary), "Afacad", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-primary), "Afacad", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, "SF Mono", monospace;
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --space-tight: 0.75rem;
+  --space-control: 1rem;
+  --space-panel: 1.5rem;
+  --space-group: 2rem;
+  --space-section: 3rem;
+  --space-macro: 6rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  * { border-color: var(--color-line); }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    background: var(--color-ink);
   }
+
+  html::-webkit-scrollbar { display: none; }
+
+  body {
+    background:
+      radial-gradient(1100px 680px at 80% -10%, oklch(0.66 0.16 158 / 0.21), transparent 68%),
+      radial-gradient(900px 900px at -12% 45%, oklch(0.42 0.09 166 / 0.12), transparent 72%),
+      var(--color-ink);
+    color: var(--color-fg);
+    font-feature-settings: "cv11", "ss01";
+    font-size: 1rem;
+    line-height: 1.55;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+
+  ::selection { background: var(--color-botanical); color: var(--color-signal-ink); }
+
+  :focus-visible {
+    outline: 2px solid var(--color-botanical-bright);
+    outline-offset: 4px;
+  }
+
+  .font-mono { font-feature-settings: "tnum", "zero"; }
+
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility panel {
+  background: var(--color-panel);
+  border: 0;
+  border-radius: 1.25rem;
+  box-shadow:
+    inset 0 1px 0 oklch(0.955 0.012 138 / 0.045),
+    0 24px 70px oklch(0.09 0.03 158 / 0.16);
+}
+
+@utility evidence-panel {
+  background: var(--color-panel);
+  border: 0;
+  border-radius: 1.25rem;
+  box-shadow:
+    inset 0 1px 0 oklch(0.955 0.012 138 / 0.045),
+    0 28px 80px oklch(0.09 0.03 158 / 0.18);
+}
+
+@utility evidence-rule { border-color: oklch(0.955 0.012 138 / 0.22); }
+
+@utility campaign-grid {
+  background-image:
+    linear-gradient(to right, oklch(0.955 0.012 138 / 0.09) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0.955 0.012 138 / 0.06) 1px, transparent 1px);
+  background-size: 8.333% 100%, 100% 96px;
+}
+
+@utility bg-grid {
+  background-image:
+    linear-gradient(oklch(0.955 0.012 138 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.955 0.012 138 / 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+@utility kicker {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-faint);
+}
+
+@utility bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.campaign-stamp {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  border: 1px solid currentColor;
+  padding: 0.45rem 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.image-halftone::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(oklch(0.18 0.036 158 / .45) 0.7px, transparent 0.7px);
+  background-size: 4px 4px;
+  mix-blend-mode: multiply;
+}
+
+@keyframes gs-scan {
+  0% { transform: translateY(-120%); opacity: 0; }
+  14%, 84% { opacity: 1; }
+  100% { transform: translateY(780%); opacity: 0; }
+}
+@keyframes gs-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.8); } }
+@keyframes gs-shimmer { 100% { transform: translateX(100%); } }
+@keyframes gs-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+.gs-scanline { animation: gs-scan 4.8s var(--ease-out-quint) infinite; }
+.gs-pulse { animation: gs-pulse 1.8s var(--ease-out-quart) infinite; }
+.gs-caret::after {
+  content: "";
+  display: inline-block;
+  width: .6ch;
+  height: 1.05em;
+  margin-left: .12em;
+  translate: 0 .14em;
+  background: var(--color-botanical-bright);
+  animation: gs-blink 1.05s steps(1) infinite;
+}
+.gs-skeleton { position: relative; overflow: hidden; background: var(--color-panel-2); }
+.gs-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, oklch(0.955 0.012 138 / .08), transparent);
+  animation: gs-shimmer 1.6s infinite;
+}
+
+.recharts-cartesian-axis-tick text { fill: var(--color-faint); font-family: var(--font-mono); font-size: 11px; }
+.recharts-default-tooltip {
+  background: var(--color-panel-2) !important;
+  border: 1px solid var(--color-line-strong) !important;
+  border-radius: 0 !important;
+  box-shadow: 10px 10px 0 oklch(0.08 0.02 158 / .45) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 12px !important;
+}
+.recharts-tooltip-label { color: var(--color-muted) !important; }
+.recharts-tooltip-item { color: var(--color-fg) !important; }
+.recharts-cartesian-grid line { stroke: oklch(0.955 0.012 138 / .08); }
+.recharts-legend-item-text { color: var(--color-muted) !important; font-family: var(--font-mono); font-size: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .gs-scanline, .gs-pulse, .gs-skeleton::after, .gs-caret::after { animation: none !important; }
 }

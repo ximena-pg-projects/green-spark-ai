@@ -47,7 +47,7 @@ Built and verified (compiles, lints, smoke-tested):
 Next up:
 
 - [ ] Add `ANTHROPIC_API_KEY` to `.env.local` so the dashboard shows live Claude analysis (without it, the offline fallback runs)
-- [ ] Swap the placeholder Austin school for the teammate's real US school (edit `data/school.json` + `lib/flagship.ts`)
+- [x] Use Hanover High School public data as the flagship profile (`data/school.json` + `lib/flagship.ts`)
 - [ ] Deploy to Vercel and set the key in the project env
 - [ ] Record the 3–5 minute pitch video
 
@@ -111,8 +111,6 @@ data/
 scripts/                 gen-peers + smoke tests (calc, packet, simulate,
                          detective-local, estimate, usage)
 ```
-
-See [DEVPOST.md](DEVPOST.md) for the pre-written submission fields.
 
 ## Responsible AI
 

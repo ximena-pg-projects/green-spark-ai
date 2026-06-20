@@ -1,10 +1,27 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import {
+  ArrowRight,
+  ShieldCheck,
+  Gauge,
+  SlidersHorizontal,
+  Gift,
+  Megaphone,
+  type Icon,
+} from "@phosphor-icons/react";
 import demoSchool from "@/data/school.json";
-import { FLAGSHIP } from "@/lib/flagship";
 import { estimateFromProfile } from "@/lib/estimate";
+import { buildEvidencePacket } from "@/lib/benchmarks";
+import { SiteHeader, SiteFooter } from "@/components/brand";
+import { Reveal, CountUp, Parallax } from "@/components/motion";
+import { ShaderField } from "@/components/fx";
+import { CaseWalkthrough } from "@/components/CaseWalkthrough";
 import type { SchoolData, SchoolProfile } from "@/lib/schema";
 
 const school = demoSchool as unknown as SchoolData;
@@ -18,7 +35,8 @@ const SCHOOL_TYPES: SchoolProfile["schoolType"][] = [
 
 const GRID_REGIONS: { code: string; label: string }[] = [
   { code: "", label: "US average" },
-  { code: "ISNE", label: "New England / ISO-NE" },
+  { code: "ISNE", label: "New England (ISO-NE)" },
+  { code: "ERCT", label: "Texas (ERCOT)" },
   { code: "CAMX", label: "California" },
   { code: "NYCW", label: "New York City" },
   { code: "RFCE", label: "Mid-Atlantic" },
@@ -26,8 +44,24 @@ const GRID_REGIONS: { code: string; label: string }[] = [
   { code: "RMPA", label: "Rockies" },
 ];
 
+const EASE = [0.16, 1, 0.3, 1] as const;
+
+function usd(n: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+    notation: n >= 100000 ? "compact" : "standard",
+  }).format(n);
+}
+
 export default function Home() {
   const router = useRouter();
+  const reduce = useReducedMotion();
+  const hero = useRef<HTMLElement>(null);
+  const heroCopy = useRef<HTMLDivElement>(null);
+  const heroMedia = useRef<HTMLDivElement>(null);
+
   const [profile, setProfile] = useState<SchoolProfile>({
     name: "",
     city: "",
@@ -45,6 +79,44 @@ export default function Home() {
 
   const canSubmit = profile.name.trim().length > 0 && profile.students > 0;
 
+  // Real evidence for the flagship so the hero numbers match the dashboard.
+  const evidence = useMemo(() => buildEvidencePacket(school), []);
+  const co2t = Math.round(evidence.totals.annualCo2eKg / 1000);
+
+  useEffect(() => {
+    if (!hero.current || !heroCopy.current || !heroMedia.current) return;
+    gsap.registerPlugin(ScrollTrigger);
+    const mm = gsap.matchMedia();
+
+    mm.add(
+      "(min-width: 1024px) and (prefers-reduced-motion: no-preference)",
+      () => {
+        gsap
+          .timeline({
+            scrollTrigger: {
+              trigger: hero.current,
+              start: "top top",
+              end: "bottom top",
+              scrub: 0.9,
+              invalidateOnRefresh: true,
+            },
+          })
+          .to(
+            heroCopy.current,
+            { yPercent: -8, autoAlpha: 0.45, ease: "none" },
+            0,
+          )
+          .to(
+            heroMedia.current,
+            { yPercent: 6, scale: 1.08, ease: "none" },
+            0,
+          );
+      },
+    );
+
+    return () => mm.revert();
+  }, []);
+
   function runDemo() {
     sessionStorage.removeItem("greenspark.school");
     router.push("/analyze");
@@ -53,7 +125,6 @@ export default function Home() {
   function autofillAndAnalyze() {
     const cleaned: SchoolProfile = {
       ...profile,
-      squareFootage: profile.squareFootage ?? null,
       gridRegion: profile.gridRegion || undefined,
     };
     const estimated = estimateFromProfile(cleaned);
@@ -61,185 +132,395 @@ export default function Home() {
     router.push("/analyze");
   }
 
-  const buildingSizeLabel =
-    school.profile.squareFootage != null && school.profile.squareFootage > 0
-      ? `${school.profile.squareFootage.toLocaleString()} ft²`
-      : "Not public";
-  const gridRegionLabel = school.profile.gridRegion === "ISNE"
-    ? "New England / ISO-NE"
-    : school.profile.gridRegion || "Not public";
+  const fade = (i: number) =>
+    reduce
+      ? {}
+      : {
+          initial: { opacity: 0, y: 22 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.75, delay: 0.05 * i, ease: EASE },
+        };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white text-slate-900">
-      <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2 font-semibold">
-          <span className="text-2xl">🌱</span>
-          <span className="text-lg tracking-tight">Green Spark AI</span>
-        </div>
-        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800">
-          USAII Hackathon 2026
-        </span>
-      </header>
-
-      <main className="mx-auto w-full max-w-7xl px-6 pb-16">
-        <section className="grid gap-10 py-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-medium text-emerald-700">
-              🔍 Environmental AI Detective
-            </span>
-            <h1 className="mt-5 max-w-2xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-              {FLAGSHIP.hero.name} wants to fix {school.profile.name}&apos;s
-              hidden footprint.
-            </h1>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-              {FLAGSHIP.hero.name} is the {FLAGSHIP.hero.role} at{" "}
-              {school.profile.name} in {school.profile.city},{" "}
-              {school.profile.state}. {FLAGSHIP.problem} Green Spark AI starts
-              from the school&apos;s profile and hands back a ranked, costed
-              action plan they can take to school leadership.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                onClick={runDemo}
-                className="inline-flex h-12 items-center justify-center rounded-full bg-emerald-600 px-7 text-base font-medium text-white transition-colors hover:bg-emerald-700"
-              >
-                See the {school.profile.name} demo →
-              </button>
-              <a
-                href="#audit-form"
-                className="inline-flex h-12 items-center justify-center rounded-full border border-slate-300 bg-white px-7 text-base font-medium text-slate-700 transition-colors hover:border-emerald-300 hover:text-emerald-700"
-              >
-                Analyze your own school
-              </a>
-            </div>
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              <HowItWorks step="1" title="Input" body="A school profile, or full usage numbers. No private data required." />
-              <HowItWorks step="2" title="AI reasoning" body="Calc engine → anomaly + peer detection → Claude ranks the fixes." />
-              <HowItWorks step="3" title="Action" body="A costed plan, local rebates, and a what-if simulator." />
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Flagship school
-                </p>
-                <h2 className="mt-1 text-2xl font-semibold">{school.profile.name}</h2>
-              </div>
-              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                {FLAGSHIP.dataBadge}
-              </span>
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-4 text-sm">
-              <Field label="Students" value={school.profile.students.toLocaleString()} />
-              <Field label="Staff" value={school.profile.staff.toLocaleString()} />
-              <Field label="City" value={`${school.profile.city}, ${school.profile.state}`} />
-              <Field label="Building" value={buildingSizeLabel} />
-              <Field label="Hero user" value={FLAGSHIP.hero.name} />
-              <Field label="Grid region" value={gridRegionLabel} />
-            </div>
+    <div className="flex min-h-dvh flex-col">
+      <SiteHeader
+        right={
+          <>
+            <a
+              href="#intake"
+              className="hidden border-b border-mineral pb-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-mineral transition-colors duration-300 hover:text-botanical-bright sm:inline"
+            >
+              Analyze yours
+            </a>
             <button
               onClick={runDemo}
-              className="mt-6 w-full rounded-full bg-slate-900 py-3 text-sm font-medium text-white hover:bg-slate-800"
+              className="group inline-flex h-10 items-center gap-3 border border-botanical bg-botanical px-4 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-forest transition-colors duration-300 hover:bg-botanical-bright active:translate-y-px"
             >
-              Open the case file
+              Explore school
+              <ArrowRight
+                weight="bold"
+                className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5"
+              />
             </button>
+          </>
+        }
+      />
+
+      <main className="w-full max-w-full flex-1 overflow-x-clip">
+        {/* ── HERO ─────────────────────────────────────────────────────── */}
+        <section ref={hero} className="relative min-h-[calc(100dvh-72px)] overflow-hidden border-b border-forest bg-botanical text-forest">
+          <div className="campaign-grid absolute inset-0 opacity-55" aria-hidden />
+          <div className="mx-auto grid min-h-[calc(100dvh-72px)] w-full max-w-[1600px] grid-cols-1 lg:grid-cols-12">
+            <div className="relative z-10 flex flex-col justify-between border-r border-forest px-5 py-8 sm:px-8 lg:col-span-7 lg:px-12 lg:py-12">
+              <motion.div {...fade(0)} className="flex items-center justify-between gap-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em]">
+                <span>Our school / environmental view</span>
+                <span className="campaign-stamp">Live view · 001</span>
+              </motion.div>
+
+              <div ref={heroCopy} className="py-16 lg:py-10">
+                <motion.h1
+                  {...fade(1)}
+                  className="max-w-[920px] font-display text-[clamp(4.5rem,8.4vw,9.2rem)] font-semibold leading-[0.82] tracking-[-0.065em]"
+                >
+                  Our school,<br />clearly seen.
+                </motion.h1>
+                <motion.p {...fade(2)} className="mt-8 max-w-[55ch] text-lg leading-[1.5] lg:text-xl">
+                  A clear view of our footprint, the cost behind it, and the changes worth making next.
+                </motion.p>
+              </div>
+
+              <motion.div {...fade(3)} className="grid gap-6 border-t border-forest pt-6 sm:grid-cols-[auto_1fr] sm:items-end">
+                <button
+                  onClick={runDemo}
+                  className="group inline-flex h-14 w-max items-center border border-forest bg-forest pl-5 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-mineral transition-colors duration-300 hover:bg-mineral hover:text-forest active:translate-y-px"
+                >
+                  Explore our school
+                  <span className="ml-5 grid h-full w-14 place-items-center border-l border-current">
+                    <ArrowRight weight="bold" className="h-4 w-4 transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:translate-x-1" />
+                  </span>
+                </button>
+                <a href="#intake" className="justify-self-start border-b border-forest pb-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] lg:justify-self-end">
+                  Analyze another school ↓
+                </a>
+              </motion.div>
+            </div>
+
+            <motion.div
+              ref={heroMedia}
+              initial={reduce ? false : { opacity: 0, clipPath: "inset(0 0 100% 0)" }}
+              animate={{ opacity: 1, clipPath: "inset(0 0 0% 0)" }}
+              transition={{ duration: 1.1, delay: 0.18, ease: EASE }}
+              className="relative isolate min-h-[540px] overflow-hidden lg:col-span-5 lg:min-h-full"
+            >
+              <Image src="/images/hanover-high-school.jpg" alt="The front facade of Hanover High School in Hanover, New Hampshire" fill priority loading="eager" sizes="(min-width: 1024px) 42vw, 100vw" className="object-cover object-[50%_48%] saturate-[0.78] contrast-110" />
+              <div className="absolute inset-0 bg-forest/25 mix-blend-multiply" />
+              <div className="absolute inset-0 z-[1] opacity-35 mix-blend-multiply"><ShaderField className="h-full w-full" /></div>
+              <div className="image-halftone absolute inset-0 z-[2]" />
+
+              <div className="absolute inset-x-0 bottom-0 z-20 grid grid-cols-2 border-t border-mineral bg-forest text-mineral">
+                <div className="border-r border-mineral p-5">
+                  <p className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-botanical-bright">Annual CO₂e</p>
+                  <p className="mt-2 font-display text-5xl tracking-[-0.06em]"><CountUp value={co2t} />T</p>
+                </div>
+                <div className="p-5">
+                  <p className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-botanical-bright">Annual cost</p>
+                  <p className="mt-2 font-display text-4xl tracking-[-0.06em]"><CountUp value={evidence.totals.annualCostUsd} format={(n) => usd(n)} /></p>
+                </div>
+              </div>
+              <div className="absolute right-4 top-4 z-20 campaign-stamp border-mineral bg-forest text-mineral">
+                {school.profile.name}
+              </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* Working intake: profile only -> benchmark autofill -> analyze */}
-        <section
-          id="audit-form"
-          className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-emerald-600">
-              Analyze your own school
-            </p>
-            <h2 className="mt-1 text-2xl font-semibold">
-              Just the profile. We estimate the rest.
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Enter what you know off the top of your head. Green Spark fills
-              every category from published benchmarks for a school your size,
-              runs the detective, and is honest that it is a Low-confidence
-              estimate until you add real numbers.
-            </p>
-          </div>
+        {/* ── REASONING WALKTHROUGH (pinned horizontal scroll) ─────────── */}
+        <CaseWalkthrough />
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <Input label="School name" value={profile.name} onChange={(v) => set("name", v)} placeholder="e.g. Riverside High School" />
-            <Input label="City" value={profile.city} onChange={(v) => set("city", v)} placeholder="Hanover" />
-            <Input label="State" value={profile.state} onChange={(v) => set("state", v)} placeholder="NH" />
-            <Select
-              label="School type"
-              value={profile.schoolType}
-              options={SCHOOL_TYPES.map((t) => ({ value: t, label: t }))}
-              onChange={(v) => set("schoolType", v as SchoolProfile["schoolType"])}
-            />
-            <NumberInput label="Students" value={profile.students} onChange={(v) => set("students", v)} />
-            <NumberInput label="Staff" value={profile.staff} onChange={(v) => set("staff", v)} />
-            <NumberInput
-              label="Building size (ft²)"
-              value={profile.squareFootage ?? 0}
-              onChange={(v) => set("squareFootage", v > 0 ? v : null)}
-            />
-            <Select
-              label="Electric grid region"
-              value={profile.gridRegion ?? ""}
-              options={GRID_REGIONS.map((g) => ({ value: g.code, label: g.label }))}
-              onChange={(v) => set("gridRegion", v)}
-            />
-          </div>
+        {/* ── ACTION SYSTEM ────────────────────────────────────────────── */}
+        <section id="action-system" className="border-b border-forest/15 bg-mineral text-forest">
+          <div className="mx-auto w-full max-w-[1600px] px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
+            <div className="grid items-end gap-12 lg:grid-cols-12 lg:gap-16">
+              <Reveal className="lg:col-span-7 lg:pb-8">
+                <Parallax from={90} to={-90} fade scaleFrom={0.92}>
+                  <span className="campaign-stamp">The action layer / from evidence to choice</span>
+                  <h2 className="mt-8 max-w-5xl font-display text-[clamp(3.7rem,6.6vw,7.8rem)] font-semibold leading-[0.86] tracking-[-0.06em]">
+                    Turn what we see into what we do.
+                  </h2>
+                  <p className="mt-8 max-w-[62ch] text-lg leading-[1.55] text-forest/70">
+                    Test a move, see what changes, then carry the strongest case to the people who can make it happen.
+                  </p>
+                </Parallax>
+              </Reveal>
+              <Reveal delay={0.08} className="relative min-h-[430px] overflow-hidden rounded-[1.5rem] image-halftone lg:col-span-5">
+                <Parallax className="absolute -inset-y-[30%] inset-x-0" from={-120} to={120}>
+                  <Image src="/images/student-action.webp" alt="Students collaborating around a laptop in a library" fill sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover saturate-[0.76] contrast-110" />
+                  <div className="absolute inset-0 bg-botanical/28 mix-blend-multiply" />
+                </Parallax>
+                <p className="absolute bottom-5 left-5 right-5 z-10 rounded-xl bg-mineral/90 p-4 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-forest backdrop-blur-sm">Our numbers become useful when they support a shared next move.</p>
+              </Reveal>
+            </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              onClick={autofillAndAnalyze}
-              disabled={!canSubmit}
-              className="inline-flex h-12 items-center justify-center rounded-full bg-emerald-600 px-7 text-base font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-            >
-              Autofill from benchmarks & analyze →
-            </button>
-            <span className="text-xs text-slate-400">
-              {canSubmit
-                ? "Lands at Low confidence by design — add real numbers on the dashboard to sharpen it."
-                : "Enter at least a school name and student count."}
-            </span>
+            <ActionSimulator annualCost={evidence.totals.annualCostUsd} annualCo2={co2t} />
+
+            <Parallax className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" from={72} to={-72} fade>
+              <ActionSystem
+                index="01"
+                icon={ShieldCheck}
+                title="Confidence gate"
+                body="Thin evidence lowers the score and names what our school should measure next."
+              />
+              <ActionSystem
+                index="02"
+                icon={Gauge}
+                title="Peer benchmark"
+                body="Similar schools give every category a useful point of comparison."
+              />
+              <ActionSystem
+                index="03"
+                icon={Gift}
+                title="Local rebates"
+                body="Eligible incentives sit beside each fix, cost, and payback window."
+              />
+              <ActionSystem
+                index="04"
+                icon={Megaphone}
+                title="Student pitch mode"
+                body="The analysis becomes three clear points our community can carry forward."
+              />
+            </Parallax>
+          </div>
+        </section>
+
+        {/* ── INTAKE FORM ──────────────────────────────────────────────── */}
+        <section id="intake" className="border-b border-line-strong bg-forest">
+          <div className="mx-auto grid w-full max-w-[1600px] px-5 py-20 sm:px-8 lg:grid-cols-12 lg:px-12 lg:py-24">
+            <Reveal className="lg:col-span-4 lg:pr-12">
+              <Parallax from={96} to={-96} fade scaleFrom={0.93}>
+              <span className="campaign-stamp border-botanical-bright text-botanical-bright">Another school / intake</span>
+              <h2 className="mt-8 font-display text-[clamp(3.4rem,5.2vw,5.8rem)] font-semibold leading-[0.88] tracking-[-0.055em]">
+                Bring another school into view.
+              </h2>
+              <p className="mt-6 max-w-[58ch] text-base leading-[1.6] text-muted">
+                Enter what you know off the top of your head. Green Spark fills
+                every category from published benchmarks for a school your size,
+                runs the detective, and stays honest that it is a Low-confidence
+                estimate until you add real numbers.
+              </p>
+              <div className="mt-8 space-y-3 font-mono text-[12px] text-faint">
+                <FactLine k="No private data" v="profile only to start" />
+                <FactLine k="Time to result" v="~10 seconds" />
+                <FactLine k="Confidence" v="rises as you add real figures" />
+              </div>
+              </Parallax>
+            </Reveal>
+
+            <Reveal delay={0.1} className="mt-12 lg:col-span-8 lg:mt-0">
+              <Parallax className="evidence-panel p-6 sm:p-8" from={44} to={-44}>
+                <div className="mb-8 flex items-center justify-between border-b border-line-strong pb-4">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-botanical-bright">Intake sheet / required fields</span>
+                  <span className="font-display text-4xl text-line-strong">01</span>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="School name" value={profile.name} onChange={(v) => set("name", v)} placeholder="Riverside High School" />
+                  <Field label="City" value={profile.city} onChange={(v) => set("city", v)} placeholder="Hanover" />
+                  <Field label="State" value={profile.state} onChange={(v) => set("state", v)} placeholder="NH" />
+                  <SelectField
+                    label="School type"
+                    value={profile.schoolType}
+                    options={SCHOOL_TYPES.map((t) => ({ value: t, label: t }))}
+                    onChange={(v) => set("schoolType", v as SchoolProfile["schoolType"])}
+                  />
+                  <NumberField label="Students" value={profile.students} onChange={(v) => set("students", v ?? 0)} />
+                  <NumberField label="Staff" value={profile.staff} onChange={(v) => set("staff", v ?? 0)} />
+                  <NumberField label="Building size" unit="ft² · optional" value={profile.squareFootage} onChange={(v) => set("squareFootage", v)} />
+                  <SelectField
+                    label="Electric grid region"
+                    value={profile.gridRegion ?? ""}
+                    options={GRID_REGIONS.map((g) => ({ value: g.code, label: g.label }))}
+                    onChange={(v) => set("gridRegion", v)}
+                  />
+                </div>
+
+                <div className="mt-8 flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="max-w-xs font-mono text-[11px] leading-5 text-faint">
+                    {canSubmit
+                      ? "Lands at Low confidence by design. Sharpen it on the dashboard."
+                      : "Need a school name and student count."}
+                  </p>
+                  <button
+                    onClick={autofillAndAnalyze}
+                    disabled={!canSubmit}
+                    className="group inline-flex h-14 shrink-0 items-center justify-center border border-botanical bg-botanical px-6 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-forest transition-colors duration-300 hover:bg-botanical-bright active:translate-y-px disabled:cursor-not-allowed disabled:border-line-strong disabled:bg-panel-2 disabled:text-faint"
+                  >
+                    Autofill &amp; analyze
+                    <ArrowRight
+                      weight="bold"
+                      className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+                    />
+                  </button>
+                </div>
+              </Parallax>
+            </Reveal>
           </div>
         </section>
       </main>
 
-      <footer className="mx-auto w-full max-w-7xl px-6 py-8 text-sm text-slate-400">
-        Green Spark AI · USAII Global AI Hackathon 2026 · Challenge Brief 2,
-        Direction B
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
 
-function HowItWorks({ step, title, body }: { step: string; title: string; body: string }) {
+/* ── Action system ────────────────────────────────────────────────────── */
+
+function ActionSystem({
+  index,
+  icon: Ico,
+  title,
+  body,
+}: {
+  index: string;
+  icon: Icon;
+  title: string;
+  body: string;
+}) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
-        {step}
-      </span>
-      <p className="mt-2 font-semibold">{title}</p>
-      <p className="mt-1 text-xs leading-5 text-slate-500">{body}</p>
-    </div>
+    <Reveal className="h-full">
+      <div className="group flex h-full min-h-[220px] flex-col justify-between rounded-[1.25rem] bg-forest/[0.055] p-6 transition-colors duration-300 ease-[var(--ease-out-quart)] hover:bg-botanical/25">
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-forest/45">System {index}</span>
+          <Ico weight="duotone" className="h-6 w-6 text-forest transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:-translate-y-1" />
+        </div>
+        <div className="mt-10">
+          <h3 className="font-display text-2xl font-semibold leading-[1.05] tracking-[-0.03em]">
+            {title}
+          </h3>
+          <p className="mt-3 text-[15px] leading-[1.5] text-forest/65">{body}</p>
+        </div>
+      </div>
+    </Reveal>
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function ActionSimulator({ annualCost, annualCo2 }: { annualCost: number; annualCo2: number }) {
+  const router = useRouter();
+  const reduce = useReducedMotion();
+  const scenarios = [
+    { id: "today", label: "Our baseline", note: "No changes yet", costFactor: 1, co2Factor: 1 },
+    { id: "quick", label: "Quick wins", note: "LEDs + controls", costFactor: 0.86, co2Factor: 0.89 },
+    { id: "deep", label: "Full package", note: "Efficiency + solar", costFactor: 0.63, co2Factor: 0.48 },
+  ];
+  const [active, setActive] = useState(scenarios[1]);
+  const projectedCost = annualCost * active.costFactor;
+  const projectedCo2 = annualCo2 * active.co2Factor;
+
   return (
-    <div>
-      <p className="text-slate-400">{label}</p>
-      <p className="font-semibold">{value}</p>
+    <Reveal className="mt-16">
+      <div className="group/preview relative transform-gpu transition-transform duration-[600ms] ease-[var(--ease-out-expo)] will-change-transform hover:-translate-y-2.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+        <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[1.5rem] opacity-0 shadow-[0_44px_100px_-32px_oklch(0.09_0.03_158_/_0.55)] transition-opacity duration-[600ms] ease-[var(--ease-out-expo)] group-hover/preview:opacity-100 motion-reduce:hidden" />
+        <div data-what-if-preview className="grid overflow-hidden rounded-[1.5rem] bg-botanical text-forest lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="p-7 sm:p-9 lg:p-12">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-forest text-mineral">
+              <SlidersHorizontal weight="bold" className="h-5 w-5" />
+            </span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em]">What-if preview / live</span>
+          </div>
+          <h3 className="mt-8 max-w-[12ch] font-display text-[clamp(2.7rem,4.2vw,5rem)] font-semibold leading-[0.9] tracking-[-0.05em]">
+            Choose a move. See the result.
+          </h3>
+          <p className="mt-5 max-w-[48ch] text-base leading-[1.55] text-forest/70">
+            Select one scenario below. The yearly cost and carbon estimate update immediately, so the tradeoff is visible before we open the full analysis.
+          </p>
+          <div className="mt-8 grid gap-2">
+            {scenarios.map((scenario) => {
+              const selected = active.id === scenario.id;
+              return (
+                <button
+                  key={scenario.id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setActive(scenario)}
+                  className={`flex items-center justify-between rounded-xl px-4 py-3 text-left transition-colors duration-300 ${
+                    selected
+                      ? "bg-forest text-mineral"
+                      : "bg-mineral/35 text-forest hover:bg-botanical-bright/65"
+                  }`}
+                >
+                  <span className="font-display text-lg font-semibold">{scenario.label}</span>
+                  <span className={`font-mono text-[10px] uppercase tracking-[0.12em] ${selected ? "text-botanical-bright" : "text-forest/55"}`}>{scenario.note}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between bg-mineral/82 p-7 sm:p-9 lg:p-12">
+          <div className="flex items-center justify-between font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-forest/55">
+            <span>Projected annual view</span>
+            <span>{active.label}</span>
+          </div>
+
+          <div className="my-10 grid gap-10 sm:grid-cols-2">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-forest/50">Annual cost</p>
+              <motion.p key={`cost-${active.id}`} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: EASE }} className="mt-3 font-display text-[clamp(3rem,5vw,6rem)] font-semibold leading-none tracking-[-0.06em]">
+                {usd(projectedCost)}
+              </motion.p>
+              <p className="mt-3 text-sm text-forest/60">{active.id === "today" ? "Current estimated spend" : `${usd(annualCost - projectedCost)} less each year`}</p>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-forest/50">Annual CO₂e</p>
+              <motion.p key={`co2-${active.id}`} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: EASE }} className="mt-3 font-display text-[clamp(3rem,5vw,6rem)] font-semibold leading-none tracking-[-0.06em]">
+                {Math.round(projectedCo2)}t
+              </motion.p>
+              <p className="mt-3 text-sm text-forest/60">{active.id === "today" ? "Current estimated footprint" : `${Math.round(annualCo2 - projectedCo2)} tonnes avoided`}</p>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex h-3 overflow-hidden rounded-full bg-forest/10" aria-hidden>
+              <motion.div
+                className="h-full rounded-full bg-forest"
+                animate={{ width: `${active.co2Factor * 100}%` }}
+                transition={{ duration: 0.55, ease: EASE }}
+              />
+            </div>
+            <div className="mt-3 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.12em] text-forest/50">
+              <span>Projected footprint</span>
+              <span>{Math.round(active.co2Factor * 100)}% remains</span>
+            </div>
+            <button onClick={() => router.push("/analyze")} className="group mt-8 inline-flex items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-forest">
+              Open the full analysis
+              <ArrowRight weight="bold" className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+            </button>
+          </div>
+        </div>
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
+/* ── Form fields ──────────────────────────────────────────────────────── */
+
+function FactLine({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="h-2 w-2 bg-signal" />
+      <span className="text-muted">{k}</span>
+      <span className="h-px flex-1 bg-line" />
+      <span className="text-fg">{v}</span>
     </div>
   );
 }
 
-function Input({
+const fieldBase =
+  "w-full border border-line-strong bg-ink px-3.5 py-3 text-base text-fg outline-none transition-colors duration-300 placeholder:text-faint focus:border-botanical-bright focus:bg-ink-2";
+const labelBase =
+  "mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-muted";
+
+function Field({
   label,
   value,
   onChange,
@@ -251,43 +532,51 @@ function Input({
   placeholder?: string;
 }) {
   return (
-    <label className="block text-sm">
-      <span className="mb-1 block font-medium text-slate-700">{label}</span>
+    <label className="block">
+      <span className={labelBase}>{label}</span>
       <input
         type="text"
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-emerald-500"
+        className={fieldBase}
       />
     </label>
   );
 }
 
-function NumberInput({
+function NumberField({
   label,
   value,
   onChange,
+  unit,
 }: {
   label: string;
-  value: number;
-  onChange: (v: number) => void;
+  value: number | null;
+  onChange: (v: number | null) => void;
+  unit?: string;
 }) {
   return (
-    <label className="block text-sm">
-      <span className="mb-1 block font-medium text-slate-700">{label}</span>
+    <label className="block">
+      <span className={labelBase}>
+        {label}
+        {unit ? ` (${unit})` : ""}
+      </span>
       <input
         type="number"
         min={0}
-        value={Number.isFinite(value) ? value : ""}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-emerald-500"
+        inputMode="numeric"
+        value={value != null && Number.isFinite(value) ? value : ""}
+        onChange={(e) =>
+          onChange(e.target.value === "" ? null : Number(e.target.value))
+        }
+        className={`${fieldBase} tabular-nums`}
       />
     </label>
   );
 }
 
-function Select({
+function SelectField({
   label,
   value,
   options,
@@ -299,12 +588,12 @@ function Select({
   onChange: (v: string) => void;
 }) {
   return (
-    <label className="block text-sm">
-      <span className="mb-1 block font-medium text-slate-700">{label}</span>
+    <label className="block">
+      <span className={labelBase}>{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 outline-none focus:border-emerald-500"
+        className={`${fieldBase} appearance-none bg-[length:0] [color-scheme:dark]`}
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

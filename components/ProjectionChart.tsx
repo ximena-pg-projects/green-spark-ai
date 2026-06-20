@@ -46,15 +46,20 @@ export function ProjectionChart({
 
   return (
     <div className="h-64 w-full">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        minWidth={0}
+        initialDimension={{ width: 1, height: 1 }}
+      >
         <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="afterFixes" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+              <stop offset="0%" stopColor="#19a974" stopOpacity={0.32} />
+              <stop offset="100%" stopColor="#19a974" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
+          <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} />
           <YAxis
             tickLine={false}
@@ -63,12 +68,15 @@ export function ProjectionChart({
             width={48}
             tickFormatter={(v) => format(Number(v))}
           />
-          <Tooltip formatter={(v) => `${format(Number(v))} ${label}/mo`} />
+          <Tooltip
+            formatter={(v) => `${format(Number(v))} ${label}/mo`}
+            cursor={{ stroke: "#ffffff22" }}
+          />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           <Area
             type="monotone"
             dataKey="Business as usual"
-            stroke="#94a3b8"
+            stroke="#7c8a86"
             strokeDasharray="5 4"
             fill="none"
             strokeWidth={2}
@@ -76,7 +84,7 @@ export function ProjectionChart({
           <Area
             type="monotone"
             dataKey="After fixes"
-            stroke="#10b981"
+            stroke="#19a974"
             fill="url(#afterFixes)"
             strokeWidth={2.5}
           />
