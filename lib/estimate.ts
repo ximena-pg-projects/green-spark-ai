@@ -23,7 +23,8 @@ const round = (n: number) => Math.round(n);
 
 /** Profile in, fully-estimated SchoolData out. All categories flagged estimated. */
 export function estimateFromProfile(profile: SchoolProfile): SchoolData {
-  const { squareFootage: sqft, students } = profile;
+  const { students } = profile;
+  const sqft = profile.squareFootage ?? Math.max(75_000, students * 120);
 
   // Energy: electricity from CBECS-style kWh/ft²; heating from a typical
   // per-ft² gas burn for a school in a mixed climate.

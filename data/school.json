@@ -1,42 +1,37 @@
 {
   "profile": {
-    "name": "Mesa Verde High School",
-    "city": "Austin",
-    "state": "TX",
+    "name": "Hanover High School",
+    "city": "Hanover",
+    "state": "NH",
     "country": "USA",
     "schoolType": "Secondary",
-    "squareFootage": 142000,
-    "students": 1210,
-    "staff": 95,
-    "gridRegion": "ERCT"
+    "squareFootage": null,
+    "students": 674,
+    "staff": 63.1,
+    "gridRegion": "ISNE"
   },
   "energy": {
-    "monthlyElectricBill": 13100,
+    "annualElectricityKwh": 830397,
     "primaryHeatingSource": "natural_gas",
-    "annualElectricityKwh": 1750000,
-    "annualHeatingFuel": 38000,
+    "annualHeatingFuel": 0,
     "heatingFuelUnit": "therms",
     "hasSolar": false,
     "ledPercent": 45
   },
   "water": {
-    "monthlyWaterBill": 2800,
-    "hasIrrigatedField": true,
-    "annualGallons": 4200000,
+    "annualGallons": 104000,
+    "hasIrrigatedField": false,
     "lowFlowPercent": 30,
     "rainwaterHarvesting": false
   },
   "waste": {
-    "collectionsPerWeek": 5,
-    "dumpsterSizeYards": 8,
-    "recycling": "partial",
-    "annualLandfillTons": 95,
+    "annualLandfillTons": 31,
     "annualRecycledTons": 18,
     "annualCompostTons": 0,
-    "reamsPaperPerYear": 4000
+    "recycling": "partial"
   },
   "transportation": {
-    "busCount": 14,
+    "annualDieselGallons": 3151,
     "busFuelType": "diesel",
     "pctWalkBike": 8,
     "pctBus": 55,
@@ -47,7 +42,6 @@
   "food": {
     "providesLunch": true,
     "hasMeatFreeOptions": false,
-    "plateWasteLbsPerDay": 210,
     "pctLocalSourcing": 12,
     "singleUsePlastics": "high"
   }

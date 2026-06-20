@@ -18,7 +18,7 @@ const SCHOOL_TYPES: SchoolProfile["schoolType"][] = [
 
 const GRID_REGIONS: { code: string; label: string }[] = [
   { code: "", label: "US average" },
-  { code: "ERCT", label: "Texas (ERCOT)" },
+  { code: "ISNE", label: "New England / ISO-NE" },
   { code: "CAMX", label: "California" },
   { code: "NYCW", label: "New York City" },
   { code: "RFCE", label: "Mid-Atlantic" },
@@ -34,7 +34,7 @@ export default function Home() {
     state: "",
     country: "USA",
     schoolType: "Secondary",
-    squareFootage: 100000,
+    squareFootage: null,
     students: 800,
     staff: 60,
     gridRegion: "",
@@ -43,10 +43,7 @@ export default function Home() {
   const set = <K extends keyof SchoolProfile>(key: K, value: SchoolProfile[K]) =>
     setProfile((p) => ({ ...p, [key]: value }));
 
-  const canSubmit =
-    profile.name.trim().length > 0 &&
-    profile.students > 0 &&
-    profile.squareFootage > 0;
+  const canSubmit = profile.name.trim().length > 0 && profile.students > 0;
 
   function runDemo() {
     sessionStorage.removeItem("greenspark.school");
@@ -56,12 +53,21 @@ export default function Home() {
   function autofillAndAnalyze() {
     const cleaned: SchoolProfile = {
       ...profile,
+      squareFootage: profile.squareFootage ?? null,
       gridRegion: profile.gridRegion || undefined,
     };
     const estimated = estimateFromProfile(cleaned);
     sessionStorage.setItem("greenspark.school", JSON.stringify(estimated));
     router.push("/analyze");
   }
+
+  const buildingSizeLabel =
+    school.profile.squareFootage != null && school.profile.squareFootage > 0
+      ? `${school.profile.squareFootage.toLocaleString()} ft²`
+      : "Not public";
+  const gridRegionLabel = school.profile.gridRegion === "ISNE"
+    ? "New England / ISO-NE"
+    : school.profile.gridRegion || "Not public";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-white text-slate-900">
@@ -90,7 +96,7 @@ export default function Home() {
               {school.profile.name} in {school.profile.city},{" "}
               {school.profile.state}. {FLAGSHIP.problem} Green Spark AI starts
               from the school&apos;s profile and hands back a ranked, costed
-              action plan she can take to the principal.
+              action plan they can take to school leadership.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button
@@ -129,9 +135,9 @@ export default function Home() {
               <Field label="Students" value={school.profile.students.toLocaleString()} />
               <Field label="Staff" value={school.profile.staff.toLocaleString()} />
               <Field label="City" value={`${school.profile.city}, ${school.profile.state}`} />
-              <Field label="Building" value={`${school.profile.squareFootage.toLocaleString()} ft²`} />
-              <Field label="Hero user" value={`${FLAGSHIP.hero.name}`} />
-              <Field label="Grid region" value="Texas (ERCOT)" />
+              <Field label="Building" value={buildingSizeLabel} />
+              <Field label="Hero user" value={FLAGSHIP.hero.name} />
+              <Field label="Grid region" value={gridRegionLabel} />
             </div>
             <button
               onClick={runDemo}
@@ -164,8 +170,8 @@ export default function Home() {
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <Input label="School name" value={profile.name} onChange={(v) => set("name", v)} placeholder="e.g. Riverside High School" />
-            <Input label="City" value={profile.city} onChange={(v) => set("city", v)} placeholder="Austin" />
-            <Input label="State" value={profile.state} onChange={(v) => set("state", v)} placeholder="TX" />
+            <Input label="City" value={profile.city} onChange={(v) => set("city", v)} placeholder="Hanover" />
+            <Input label="State" value={profile.state} onChange={(v) => set("state", v)} placeholder="NH" />
             <Select
               label="School type"
               value={profile.schoolType}
@@ -174,7 +180,11 @@ export default function Home() {
             />
             <NumberInput label="Students" value={profile.students} onChange={(v) => set("students", v)} />
             <NumberInput label="Staff" value={profile.staff} onChange={(v) => set("staff", v)} />
-            <NumberInput label="Building size (ft²)" value={profile.squareFootage} onChange={(v) => set("squareFootage", v)} />
+            <NumberInput
+              label="Building size (ft²)"
+              value={profile.squareFootage ?? 0}
+              onChange={(v) => set("squareFootage", v > 0 ? v : null)}
+            />
             <Select
               label="Electric grid region"
               value={profile.gridRegion ?? ""}
@@ -194,7 +204,7 @@ export default function Home() {
             <span className="text-xs text-slate-400">
               {canSubmit
                 ? "Lands at Low confidence by design — add real numbers on the dashboard to sharpen it."
-                : "Enter at least a school name, student count, and building size."}
+                : "Enter at least a school name and student count."}
             </span>
           </div>
         </section>

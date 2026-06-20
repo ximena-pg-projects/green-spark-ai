@@ -25,10 +25,10 @@ export interface SchoolProfile {
   state: string;
   country: string;
   schoolType: "Primary" | "Middle" | "Secondary" | "K-12";
-  squareFootage: number;
+  squareFootage: number | null;
   students: number;
   staff: number;
-  /** EPA eGRID subregion code, e.g. "ERCT" (ERCOT/Austin). Drives grid CO2. */
+  /** EPA eGRID code or regional shorthand used for CO2 assumptions. */
   gridRegion?: string;
 }
 
@@ -66,6 +66,7 @@ export interface WasteInputs {
 
 export interface TransportationInputs {
   busCount?: number;
+  annualDieselGallons?: number;
   busFuelType?: "diesel" | "electric" | "cng";
   pctWalkBike?: number;
   pctBus?: number;

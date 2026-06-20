@@ -3,11 +3,12 @@
 // Local + federal incentives, matched to the interventions the detective
 // recommends. This is what makes the ROI *local and concrete* rather than a
 // generic national average — the heaviest rubric row (Problem Understanding,
-// 30%) rewards local specificity, and a real Austin Energy rebate on the LED
-// retrofit is exactly that.
+// 30%) rewards local specificity, and matching a real state or federal
+// incentive to a recommended fix is exactly that.
 //
-// Curated, clearly-labeled set keyed to the flagship's region (Austin, TX) plus
-// federal programs. Swap data/rebates.json when the flagship school changes.
+// Curated, clearly-labeled programs are keyed to the flagship school context
+// and to the intervention library. Swap data/rebates.json when the flagship
+// school changes.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { CategoryKey } from "./schema";

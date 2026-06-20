@@ -13,24 +13,23 @@
 export const FLAGSHIP = {
   /** The hero user: who is actually sitting in front of this tool. */
   hero: {
-    name: "Maya Reyes",
-    role: "Green Team lead",
+    name: "Avery Chen",
+    role: "student sustainability lead",
     grade: 11,
     /** The decision she is trying to win. */
-    goal: "make the case to Principal Alvarez for three changes the school can afford this year",
+    goal: "make the case to school leadership for three changes the school can afford this year",
   },
 
   /** One-line statement of the local problem, in the hero's voice. */
   problem:
-    "Maya knows Mesa Verde wastes energy, water, and food, but she has never seen the building's numbers in one place, and she cannot walk into the principal's office with a vague feeling. She needs to know which few things matter most and what fixing them costs.",
+    "Avery wants a clear picture of Hanover High School's energy, water, transportation, and waste footprint so she can ask for the next step with confidence.",
 
   /**
-   * Honest data label, surfaced in the UI so synthetic figures are never shown
-   * as measured truth. This is also the Devpost "Data Disclosure" answer.
+   * Honest data label, surfaced in the UI so the public-data status is clear.
    */
   dataNote:
-    "Representative profile of a mid-size Austin high school. The profile (size, enrollment, location, grid region) is realistic; consumption figures are synthetic estimates drawn from published EPA, EIA, and DOE benchmark ranges and are clearly labeled as estimates. No private school data is required.",
+    "Public demo data for Hanover High School. Building square footage and cafeteria food waste are not public, so those items are marked unknown or audit-needed. Transportation uses public diesel-fuel data, and the school is noted as having a composting program.",
 
   /** Short label for badges. */
-  dataBadge: "Representative demo data",
+  dataBadge: "Public demo data",
 } as const;

@@ -48,9 +48,10 @@ export const USAGE_FIELDS: Record<CategoryKey, UsageField> = {
       "On the waste hauler's invoice, or estimate from dumpster size × pickups per week. Ask facilities.",
   },
   transportation: {
-    label: "Number of school buses",
-    unit: "buses",
-    source: "Ask the front office or the transportation coordinator.",
+    label: "School bus diesel used in a year",
+    unit: "gallons diesel/year",
+    source:
+      "From fuel records or district transportation reports. This is the public-data replacement for a bus-count estimate.",
   },
   food: {
     label: "Cafeteria food thrown out per day",
@@ -73,7 +74,7 @@ export function getUsageValue(
     case "waste":
       return school.waste?.annualLandfillTons;
     case "transportation":
-      return school.transportation?.busCount;
+      return school.transportation?.annualDieselGallons ?? school.transportation?.busCount;
     case "food":
       return school.food?.plateWasteLbsPerDay;
   }
@@ -93,7 +94,14 @@ function setUsageValue(
     case "waste":
       return { ...school, waste: { ...school.waste, annualLandfillTons: value } };
     case "transportation":
-      return { ...school, transportation: { ...school.transportation, busCount: value } };
+      return {
+        ...school,
+        transportation: {
+          ...school.transportation,
+          annualDieselGallons: value,
+          busCount: undefined,
+        },
+      };
     case "food":
       return { ...school, food: { ...school.food, plateWasteLbsPerDay: value } };
   }
